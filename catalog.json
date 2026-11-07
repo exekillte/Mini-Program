@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "repository": "exekillte/Mini-Program",
+  "items": [
+    {
+      "id": "chaoxing-question-export",
+      "name": "学习通作业图文导出（AI友好版）",
+      "type": "userscript",
+      "version": "1.3.1",
+      "status": "active",
+      "sourcePath": "userscripts/chaoxing-question-export/chaoxing-question-export.user.js",
+      "installUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/userscripts/chaoxing-question-export/chaoxing-question-export.user.js",
+      "updateUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/userscripts/chaoxing-question-export/chaoxing-question-export.user.js",
+      "documentationPath": "userscripts/chaoxing-question-export/README.md",
+      "notes": "基于用户已测试的 v1.3.0；本次仅增加 GitHub 分发与自动更新元数据。"
+    }
+  ]
+}
