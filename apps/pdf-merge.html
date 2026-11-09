@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 合并工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --border: #333333;
+            --text-main: #e0e0e0;
+            --text-dim: #888888;
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --hover: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px; /* 合并工具不需要太宽 */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 顶部卡片 */
+        .header-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-info h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        .header-info p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-dim); }
+
+        /* 拖拽上传区 */
+        .drop-zone {
+            border: 2px dashed #444;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background: #1a1a1a;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+        }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: #222; }
+        .drop-icon { font-size: 32px; color: #555; margin-bottom: 10px; }
+        .drop-hint { color: var(--text-dim); font-size: 14px; }
+
+        /* 文件列表区 */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* 单个文件条目 */
+        .file-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: grab; /* 提示可拖拽 */
+            user-select: none;
+        }
+        
+        /* 拖拽时的样式 */
+        .file-item.dragging {
+            opacity: 0.5;
+            background: #252525;
+            border-color: var(--primary);
+        }
+
+        .drag-handle {
+            color: #555;
+            cursor: grab;
+            font-size: 18px;
+            padding: 0 5px;
+        }
+        .file-item:hover .drag-handle { color: var(--text-main); }
+
+        .file-info { flex: 1; overflow: hidden; }
+        .file-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+        /* 按钮组 */
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-btn:hover { background: var(--hover); color: var(--text-main); }
+        .action-btn.delete:hover { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        /* 底部操作栏 */
+        .footer-bar {
+            position: sticky;
+            bottom: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        button.primary {
+            background: var(--primary); 
+            color: white; 
+            border: none;
+            padding: 10px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button.primary:hover { background: #2563eb; }
+        button.primary:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+        .btn-text {
+            background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px;
+        }
+        .btn-text:hover { color: var(--text-main); }
+
+        /* 简单的加载动画 */
+        .spinner {
+            border: 2px solid rgba(255,255,255,0.1);
+            border-left-color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-card">
+        <div class="header-info">
+            <h1>PDF 合并工具</h1>
+            <p>拖拽排序 · 矢量无损合并 · 纯本地运行</p>
+        </div>
+        <button class="btn-text" onclick="document.getElementById('file-input').click()">+ 添加文件</button>
+    </div>
+
+    <!-- 拖拽区 -->
+    <div id="drop-zone" class="drop-zone">
+        <div class="drop-icon">📂</div>
+        <div class="drop-hint">点击添加或将多个 PDF 拖入此处</div>
+        <div style="font-size: 12px; color: #666; margin-top: 5px;">支持多选批量上传</div>
+    </div>
+    <input type="file" id="file-input" style="display:none" accept=".pdf" multiple>
+
+    <!-- 文件列表容器 -->
+    <div id="file-list" class="file-list"></div>
+
+    <!-- 底部操作栏 -->
+    <div class="footer-bar">
+        <div style="font-size: 13px; color: #888;">
+            共 <b id="total-files" style="color: var(--text-main)">0</b> 个文件 
+            <span style="margin: 0 5px">·</span>
+            预计 <b id="total-pages" style="color: var(--text-main)">0</b> 页
+        </div>
+        <button id="merge-btn" class="primary" onclick="mergePDFs()" disabled>开始合并</button>
+    </div>
+</div>
+
+<script>
+    const els = {
+        drop: document.getElementById('drop-zone'),
+        input: document.getElementById('file-input'),
+        list: document.getElementById('file-list'),
+        totalFiles: document.getElementById('total-files'),
+        totalPages: document.getElementById('total-pages'),
+        mergeBtn: document.getElementById('merge-btn')
+    };
+
+    // 存储文件对象的数组
+    // 结构: { id: string, file: File, pageCount: number }
+    let fileQueue = [];
+    
+    // --- 拖拽与上传事件 ---
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+        document.body.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+    });
+    
+    els.drop.addEventListener('dragover', () => els.drop.classList.add('drag-over'));
+    els.drop.addEventListener('dragleave', () => els.drop.classList.remove('drag-over'));
+    
+    els.drop.addEventListener('drop', (e) => {
+        els.drop.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+    });
+    
+    els.input.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        // 清空 input 允许重复选择同名文件
+        els.input.value = ''; 
+    });
+
+    els.drop.onclick = () => els.input.click();
+
+    // --- 核心逻辑：文件处理 ---
+    async function handleFiles(fileList) {
+        if (!fileList.length) return;
+
+        // 临时禁用按钮，防止快速操作
+        els.mergeBtn.disabled = true;
+        els.mergeBtn.textContent = '解析中...';
+
+        for (let file of fileList) {
+            if (file.type !== 'application/pdf') continue;
+
+            try {
+                // 预解析以获取页数，提升用户体验
+                // 这里只加载头部信息，比完全渲染快得多
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+                const pageCount = pdfDoc.getPageCount();
+
+                const fileObj = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    file: file,
+                    pageCount: pageCount
+                };
+
+                fileQueue.push(fileObj);
+                renderFileItem(fileObj);
+
+            } catch (err) {
+                console.error("解析失败:", file.name, err);
+                alert(`无法解析文件 ${file.name}，可能是加密文档或已损坏。`);
+            }
+        }
+
+        updateStats();
+        resetMergeBtn();
+    }
+
+    // --- UI 渲染：列表项 ---
+    function renderFileItem(fileObj) {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.draggable = true; // 开启原生拖拽
+        div.dataset.id = fileObj.id;
+
+        // 文件大小格式化
+        const size = (fileObj.file.size / 1024 / 1024).toFixed(2) + ' MB';
+
+        div.innerHTML = `
+            <div class="drag-handle">☰</div>
+            <div class="file-info">
+                <div class="file-name" title="${fileObj.file.name}">${fileObj.file.name}</div>
+                <div class="file-meta">${fileObj.pageCount} 页 · ${size}</div>
+            </div>
+            <button class="action-btn" onclick="moveItem('${fileObj.id}', -1)" title="上移">↑</button>
+            <button class="action-btn" onclick="moveItem('${fileObj.id}', 1)" title="下移">↓</button>
+            <button class="action-btn delete" onclick="removeItem('${fileObj.id}')" title="移除">✕</button>
+        `;
+
+        // 绑定拖拽事件
+        addDragEvents(div);
+        
+        els.list.appendChild(div);
+    }
+
+    // --- 交互：列表排序与管理 ---
+
+    function removeItem(id) {
+        fileQueue = fileQueue.filter(f => f.id !== id);
+        const el = document.querySelector(`.file-item[data-id="${id}"]`);
+        if (el) el.remove();
+        updateStats();
+    }
+
+    function moveItem(id, direction) {
+        const idx = fileQueue.findIndex(f => f.id === id);
+        if (idx === -1) return;
+        
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= fileQueue.length) return;
+
+        // 交换数据
+        [fileQueue[idx], fileQueue[newIdx]] = [fileQueue[newIdx], fileQueue[idx]];
+        
+        // 交换 DOM
+        renderAllList();
+    }
+
+    // 重新渲染整个列表（用于排序后刷新 DOM）
+    function renderAllList() {
+        els.list.innerHTML = '';
+        fileQueue.forEach(obj => renderFileItem(obj));
+        updateStats();
+    }
+
+    function updateStats() {
+        els.totalFiles.textContent = fileQueue.length;
+        const totalP = fileQueue.reduce((acc, cur) => acc + cur.pageCount, 0);
+        els.totalPages.textContent = totalP;
+        
+        els.mergeBtn.disabled = fileQueue.length < 2;
+    }
+
+    function resetMergeBtn() {
+        els.mergeBtn.textContent = '开始合并';
+        if (fileQueue.length >= 2) els.mergeBtn.disabled = false;
+    }
+
+    // --- 拖拽排序逻辑 (Native API) ---
+    let dragSrcEl = null;
+
+    function addDragEvents(item) {
+        item.addEventListener('dragstart', function(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.classList.add('dragging');
+        });
+
+        item.addEventListener('dragover', function(e) {
+            if (e.preventDefault) e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        });
+
+        item.addEventListener('dragenter', function() {
+            this.classList.add('drag-over');
+        });
+
+        item.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+
+        item.addEventListener('drop', function(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            
+            if (dragSrcEl !== this) {
+                // DOM 交换位置逻辑比较复杂，简单粗暴的方法是
+                // 1. 获取源 ID 和 目标 ID
+                const srcId = dragSrcEl.dataset.id;
+                const targetId = this.dataset.id;
+                
+                // 2. 在数组中重新排序
+                const srcIdx = fileQueue.findIndex(f => f.id === srcId);
+                const targetIdx = fileQueue.findIndex(f => f.id === targetId);
+                
+                const [movedItem] = fileQueue.splice(srcIdx, 1);
+                fileQueue.splice(targetIdx, 0, movedItem);
+                
+                // 3. 重绘
+                renderAllList();
+            }
+            return false;
+        });
+
+        item.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over'));
+        });
+    }
+
+
+    // --- 核心逻辑：合并导出 ---
+    async function mergePDFs() {
+        if (fileQueue.length < 2) return;
+
+        const originalText = els.mergeBtn.textContent;
+        els.mergeBtn.innerHTML = '<span class="spinner"></span>处理中...';
+        els.mergeBtn.disabled = true;
+
+        try {
+            // 1. 创建一个新的空文档
+            const mergedPdf = await PDFLib.PDFDocument.create();
+
+            // 2. 遍历队列
+            for (const fileObj of fileQueue) {
+                const arrayBuffer = await fileObj.file.arrayBuffer();
+                const srcDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                
+                // 3. 复制所有页面
+                // copyPages 实现了底层对象的流复制，保留矢量、字体和链接
+                const indices = srcDoc.getPageIndices();
+                const copiedPages = await mergedPdf.copyPages(srcDoc, indices);
+                
+                // 4. 将复制的页面添加到新文档
+                copiedPages.forEach(page => mergedPdf.addPage(page));
+            }
+
+            // 5. 保存并下载
+            const pdfBytes = await mergedPdf.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            
+            // 自动生成文件名：利用第一个文件的名字 + "_合并"
+            const firstName = fileQueue[0].file.name.replace(/\.pdf$/i, "");
+            saveAs(blob, `${firstName}等${fileQueue.length}个文件_合并.pdf`);
+
+            alert('合并成功！');
+
+        } catch (err) {
+            console.error(err);
+            alert('合并过程中出现错误，请检查文件是否完整。');
+        } finally {
+            resetMergeBtn();
+        }
+    }
+</script>
+
+</body>
+</html>
