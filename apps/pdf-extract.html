@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 提取与重组工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --border: #333333;
+            --text-main: #e0e0e0;
+            --text-dim: #888888;
+            --primary: #3b82f6;
+            --badge-bg: #ef4444; 
+            --success: #10b981;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 顶部卡片 */
+        .header-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-info h1 { margin: 0; font-size: 18px; font-weight: 600; }
+        .header-info p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-dim); }
+
+        /* 拖拽区 */
+        .drop-zone {
+            border: 2px dashed #444;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            background: #1a1a1a;
+            transition: all 0.2s;
+        }
+        .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: #222; }
+
+        /* 工具栏 */
+        .toolbar {
+            display: none;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            gap: 10px;
+            align-items: center;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            flex-wrap: wrap;
+        }
+
+        /* 按钮样式 */
+        button {
+            background: #333; color: var(--text-main); border: 1px solid var(--border);
+            padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+            transition: background 0.1s;
+        }
+        button:hover { background: #444; }
+        button:active { transform: translateY(1px); }
+        
+        button.primary { background: var(--primary); border-color: var(--primary); color: white; }
+        button.primary:hover { background: #2563eb; }
+        
+        button.text-btn { background: transparent; border: none; color: var(--text-dim); }
+        button.text-btn:hover { color: var(--text-main); background: transparent; }
+
+        /* 模式切换开关 */
+        .mode-switch {
+            display: flex;
+            background: #2a2a2a;
+            border-radius: 6px;
+            padding: 3px;
+            margin-right: auto; /* 推到左边 */
+        }
+        .mode-option {
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: var(--text-dim);
+            user-select: none;
+        }
+        .mode-option.active {
+            background: #444;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* 网格系统 */
+        .grid-container {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 10px;
+            padding-bottom: 40px;
+        }
+
+        .page-card {
+            background: #252525;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.1s;
+        }
+        .page-card:hover { border-color: #555; }
+        
+        /* 选中状态 */
+        .page-card.selected {
+            border-color: var(--primary);
+            background: #2a2a2a;
+        }
+
+        /* 顺序角标/选中标记 */
+        .order-badge {
+            display: none;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: var(--primary);
+            color: white;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 12px; /* 椭圆适应多位数 */
+            padding: 0 6px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        /* 原顺序模式下的标记颜色 */
+        .page-card.selected.mode-origin .order-badge {
+            background: var(--success);
+        }
+
+        .page-card.selected .order-badge { display: flex; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .thumb-container {
+            height: 180px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #333;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .page-thumb {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .page-card.selected .page-thumb { opacity: 1; }
+
+        .page-meta {
+            background: #1e1e1e;
+            color: var(--text-dim);
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+            border-top: 1px solid #333;
+            margin-top: auto;
+        }
+        .page-card.selected .page-meta { background: #333; color: white; }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .loader { display: none; margin: 40px auto; color: var(--text-dim); font-size: 14px; text-align: center; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-card">
+        <div class="header-info">
+            <h1>PDF 页面提取与重排</h1>
+            <p>纯本地运行，数据不上传</p>
+        </div>
+        <button onclick="document.getElementById('file-input').click()">导入 PDF 文件</button>
+    </div>
+
+    <div id="drop-zone" class="drop-zone">
+        <div style="font-size: 32px; color: #555; margin-bottom:10px;">📄</div>
+        <div class="drop-hint">拖入 PDF 文件</div>
+    </div>
+    
+    <input type="file" id="file-input" style="display:none" accept=".pdf">
+
+    <div id="loader" class="loader">正在按顺序解析页面，请稍候...</div>
+
+    <div id="toolbar" class="toolbar">
+        <!-- 模式切换 -->
+        <div class="mode-switch">
+            <div id="mode-click" class="mode-option active" onclick="setMode('click')">按点击顺序导出</div>
+            <div id="mode-origin" class="mode-option" onclick="setMode('origin')">按原文档页码导出</div>
+        </div>
+
+        <div style="height: 20px; width: 1px; background: #333; margin: 0 10px;"></div>
+
+        <button class="text-btn" onclick="selectAll()">全选</button>
+        <button class="text-btn" onclick="invertSelection()">反选</button>
+        <button class="text-btn" onclick="clearSelection()">清空</button>
+
+        <div style="height: 20px; width: 1px; background: #333; margin: 0 10px;"></div>
+        
+        <span style="font-size: 12px; color: #888;">已选 <b id="count-display" style="color: var(--primary)">0</b> 页</span>
+        <button class="primary" onclick="exportPDF()">导出新 PDF</button>
+    </div>
+
+    <div id="grid" class="grid-container"></div>
+</div>
+
+<script>
+    // 配置 PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const els = {
+        drop: document.getElementById('drop-zone'),
+        input: document.getElementById('file-input'),
+        grid: document.getElementById('grid'),
+        toolbar: document.getElementById('toolbar'),
+        loader: document.getElementById('loader'),
+        countDisplay: document.getElementById('count-display'),
+        modeClick: document.getElementById('mode-click'),
+        modeOrigin: document.getElementById('mode-origin')
+    };
+
+    let currentFile = null;
+    let pdfDoc = null;
+    let totalPages = 0;
+    
+    // selectedQueue 存储被选中的页码 (1-based)
+    // 顺序即为用户点击的顺序
+    let selectedQueue = []; 
+    
+    // 导出模式: 'click' (点击顺序) | 'origin' (原文档顺序)
+    let exportMode = 'click';
+
+    // --- 交互初始化 ---
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+        document.body.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+    });
+    els.drop.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+    els.input.addEventListener('change', e => {
+        if (e.target.files.length) loadFile(e.target.files[0]);
+    });
+
+    // --- 核心逻辑 1: 加载与预占位 (解决乱序问题) ---
+    async function loadFile(file) {
+        if (file.type !== 'application/pdf') return alert('请上传 PDF');
+        currentFile = file;
+        
+        // 重置状态
+        els.drop.style.display = 'none';
+        els.loader.style.display = 'block';
+        els.toolbar.style.display = 'none'; // 先隐藏工具栏
+        els.grid.innerHTML = '';
+        selectedQueue = [];
+        updateUI();
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            // PDFLib 用于后续导出
+            pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            totalPages = pdfDoc.getPageCount();
+
+            // PDF.js 用于渲染缩略图
+            const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
+            const pdfRenderer = await loadingTask.promise;
+
+            els.loader.style.display = 'none';
+            els.grid.style.display = 'grid';
+            els.toolbar.style.display = 'flex';
+
+            // [关键步骤]：先同步创建所有的空壳容器。
+            // 这样无论图片加载快慢，容器的顺序永远是 1, 2, 3...
+            for (let i = 1; i <= totalPages; i++) {
+                createPlaceholder(i);
+            }
+
+            // 然后再异步去填充这些容器
+            for (let i = 1; i <= totalPages; i++) {
+                // 不使用 await 阻塞循环，让它们并发加载，但位置已经固定
+                renderThumbnail(pdfRenderer, i);
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('解析失败，文件可能已损坏或加密');
+            location.reload();
+        }
+    }
+
+    // 创建空壳卡片
+    function createPlaceholder(pageNum) {
+        const card = document.createElement('div');
+        card.className = 'page-card';
+        card.id = `card-${pageNum}`; // 唯一ID用于后续查找
+        card.onclick = () => togglePage(pageNum);
+
+        // 内部结构
+        card.innerHTML = `
+            <div class="order-badge" id="badge-${pageNum}"></div>
+            <div class="thumb-container" id="thumb-box-${pageNum}">
+                <!-- 图片稍后加载 -->
+                <div style="color:#555; font-size:12px;">加载中...</div>
+            </div>
+            <div class="page-meta">第 ${pageNum} 页</div>
+        `;
+        
+        els.grid.appendChild(card);
+    }
+
+    // 渲染缩略图并放入对应壳子
+    async function renderThumbnail(pdf, pageNum) {
+        try {
+            const page = await pdf.getPage(pageNum);
+            // 缩放比例，0.2-0.3 足够缩略图清晰度，过大会卡顿
+            const viewport = page.getViewport({ scale: 0.25 }); 
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+            img.className = 'page-thumb';
+            
+            // 找到对应的容器并替换内容
+            const thumbBox = document.getElementById(`thumb-box-${pageNum}`);
+            if (thumbBox) {
+                thumbBox.innerHTML = ''; // 清除"加载中"
+                thumbBox.appendChild(img);
+            }
+        } catch (e) {
+            console.error(`Page ${pageNum} render error`, e);
+        }
+    }
+
+    // --- 核心逻辑 2: 选择与状态管理 ---
+
+    function setMode(mode) {
+        exportMode = mode;
+        
+        // 更新按钮样式
+        if (mode === 'click') {
+            els.modeClick.classList.add('active');
+            els.modeOrigin.classList.remove('active');
+        } else {
+            els.modeClick.classList.remove('active');
+            els.modeOrigin.classList.add('active');
+        }
+        
+        // 刷新UI显示（因为角标样式变了）
+        refreshBadges();
+    }
+
+    function togglePage(pageNum) {
+        const index = selectedQueue.indexOf(pageNum);
+        
+        if (index === -1) {
+            selectedQueue.push(pageNum);
+        } else {
+            selectedQueue.splice(index, 1);
+        }
+        
+        refreshBadges();
+        updateUI();
+    }
+
+    function selectAll() {
+        selectedQueue = [];
+        for (let i = 1; i <= totalPages; i++) {
+            selectedQueue.push(i);
+        }
+        refreshBadges();
+        updateUI();
+    }
+
+    function invertSelection() {
+        const newQueue = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (!selectedQueue.includes(i)) {
+                newQueue.push(i);
+            }
+        }
+        // 反选后的顺序：通常按从小到大，因为反选逻辑本身是按顺序遍历的
+        selectedQueue = newQueue;
+        refreshBadges();
+        updateUI();
+    }
+
+    function clearSelection() {
+        selectedQueue = [];
+        refreshBadges();
+        updateUI();
+    }
+
+    // 刷新视觉状态（角标与边框）
+    function refreshBadges() {
+        // 1. 清理旧状态
+        document.querySelectorAll('.page-card').forEach(c => {
+            c.classList.remove('selected', 'mode-origin');
+        });
+        document.querySelectorAll('.order-badge').forEach(b => {
+            b.innerText = '';
+        });
+        
+        // 2. 决定排序逻辑用于显示
+        // 如果是 origin 模式，我们要不要显示点击顺序？
+        // 逻辑：如果 origin 模式，显示 "✓"；如果 click 模式，显示 "1, 2, 3"
+        
+        selectedQueue.forEach((pageNum, idx) => {
+            const card = document.getElementById(`card-${pageNum}`);
+            const badge = document.getElementById(`badge-${pageNum}`);
+            
+            if (card && badge) {
+                card.classList.add('selected');
+                
+                if (exportMode === 'origin') {
+                    card.classList.add('mode-origin');
+                    badge.innerHTML = '✓'; // 简单的打钩
+                } else {
+                    badge.textContent = idx + 1; // 显示点击顺序
+                }
+            }
+        });
+    }
+
+    function updateUI() {
+        els.countDisplay.textContent = selectedQueue.length;
+    }
+
+    // --- 导出逻辑 ---
+    async function exportPDF() {
+        if (selectedQueue.length === 0) return alert('请至少选择一页');
+
+        const newPdf = await PDFLib.PDFDocument.create();
+        
+        // 核心差异：根据模式决定如何处理 selectedQueue
+        let finalPages = [];
+        
+        if (exportMode === 'origin') {
+            // 复制一份，然后按数字大小排序 (1, 5, 10...)
+            finalPages = [...selectedQueue].sort((a, b) => a - b);
+        } else {
+            // 保持点击顺序 (10, 1, 5...)
+            finalPages = selectedQueue;
+        }
+
+        // 转换为 0-based 索引
+        const indices = finalPages.map(p => p - 1);
+        
+        // 批量复制页面
+        const copiedPages = await newPdf.copyPages(pdfDoc, indices);
+        copiedPages.forEach(page => newPdf.addPage(page));
+
+        const pdfBytes = await newPdf.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        
+        const originalName = currentFile.name.replace(/\.pdf$/i, "");
+        const suffix = exportMode === 'origin' ? '提取' : '重排';
+        saveAs(blob, `${originalName}_${suffix}.pdf`);
+    }
+</script>
+
+</body>
+</html>
