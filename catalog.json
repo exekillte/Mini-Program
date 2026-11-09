@@ -24,6 +24,33 @@
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
       "notes": "真实订阅实机验证前的测试版；仅支持内联 proxies 的订阅配置。"
+    },
+    {
+      "id": "pdf-toolbox",
+      "name": "PDF 工坊",
+      "type": "html-app",
+      "status": "available",
+      "sourcePath": "apps/pdf-toolbox.html",
+      "downloadUrl": "https://github.com/exekillte/Mini-Program/raw/refs/heads/main/apps/pdf-toolbox.html",
+      "notes": "原根目录 PDF工坊 的同内容 HTML 便捷副本"
+    },
+    {
+      "id": "pdf-merge",
+      "name": "PDF 合并",
+      "type": "html-app",
+      "status": "available",
+      "sourcePath": "apps/pdf-merge.html",
+      "downloadUrl": "https://github.com/exekillte/Mini-Program/raw/refs/heads/main/apps/pdf-merge.html",
+      "notes": "原根目录 PDF合并 的同内容 HTML 便捷副本"
+    },
+    {
+      "id": "pdf-extract",
+      "name": "PDF 提取与导出",
+      "type": "html-app",
+      "status": "available",
+      "sourcePath": "apps/pdf-extract.html",
+      "downloadUrl": "https://github.com/exekillte/Mini-Program/raw/refs/heads/main/apps/pdf-extract.html",
+      "notes": "原根目录 PDF提取与导出 的同内容 HTML 便捷副本"
     }
   ]
 }
