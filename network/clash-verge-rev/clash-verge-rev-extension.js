@@ -86,7 +86,7 @@ function main(config, profileName) {
 
   // 手动池保留可用的地区节点；自动池只纳入明确识别地区的真实节点。
   const gptManual = pickOrdered(["US", "JP", "SG", "KR", "GB", "TW"]);
-  // GPT 自动优先美国，其次日本、新加坡、韩国、英国；台湾保留手动，不自动选。
+  // GPT 自动候选顺序：日本 -> 美国 -> 新加坡 -> 台湾 -> 韩国 -> 英国。
   const gptAuto = pickAutoOrdered(["JP", "US", "SG", "TW", "KR", "GB"]);
 
   const googleManual = pickOrdered(["US", "SG", "JP", "TW", "HK", "KR", "GB"]);
@@ -157,7 +157,6 @@ function main(config, profileName) {
   }
 
   // 自动组统一使用 URLTest：按各业务检测地址的响应延迟择优。
-  // 180 秒检测一次，40ms 切换容差，减少慢节点长期占用与小幅抖动造成的频繁切换。
   // ChatGPT 使用公开认证提供商入口作为探测目标，避免只测首页静态壳。
   // lazy:false 使 GPT 自动组即使暂时未被选中，也持续更新节点健康状态。
   // 注意：HTTP 探测不能验证已登录会话、Cloudflare 人机验证或对话 WebSocket。
