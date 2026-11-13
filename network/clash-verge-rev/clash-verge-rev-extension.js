@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-13 URLTest 自动择优修订版
+// 版本：2026-11-13.2 GPT 专用探测与持续测速修订版
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -87,7 +87,7 @@ function main(config, profileName) {
   // 手动池保留可用的地区节点；自动池只纳入明确识别地区的真实节点。
   const gptManual = pickOrdered(["US", "JP", "SG", "KR", "GB", "TW"]);
   // GPT 自动优先美国，其次日本、新加坡、韩国、英国；台湾保留手动，不自动选。
-  const gptAuto = pickAutoOrdered(["TW", "US", "JP", "SG", "KR", "GB"]);
+  const gptAuto = pickAutoOrdered(["JP", "US", "SG", "TW", "KR", "GB"]);
 
   const googleManual = pickOrdered(["US", "SG", "JP", "TW", "HK", "KR", "GB"]);
   // Google 自动固定优先级：美国 -> 新加坡 -> 日本。
@@ -128,7 +128,7 @@ function main(config, profileName) {
         url: health.url,
         interval: health.interval || 300,
         timeout: health.timeout || 8000,
-        lazy: true,
+        lazy: health.lazy === undefined ? true : health.lazy,
         hidden: true,
         "max-failed-times": 2
       };
@@ -158,9 +158,19 @@ function main(config, profileName) {
 
   // 自动组统一使用 URLTest：按各业务检测地址的响应延迟择优。
   // 180 秒检测一次，40ms 切换容差，减少慢节点长期占用与小幅抖动造成的频繁切换。
+  // ChatGPT 使用公开认证提供商入口作为探测目标，避免只测首页静态壳。
+  // lazy:false 使 GPT 自动组即使暂时未被选中，也持续更新节点健康状态。
+  // 注意：HTTP 探测不能验证已登录会话、Cloudflare 人机验证或对话 WebSocket。
   addService(
     "💬 ChatGPT", "♻️ GPT自动", "url-test", gptAuto, gptManual,
-    { url: "https://chatgpt.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
+    {
+      url: "https://chatgpt.com/api/auth/providers",
+      expectedStatus: "200",
+      interval: 90,
+      timeout: 5000,
+      tolerance: 30,
+      lazy: false
+    }
   );
 
   addService(
