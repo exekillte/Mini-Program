@@ -1,6 +1,7 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-08 稳定自动分流版
-// 目标：真实节点筛选、单一自动组、业务分层、国内直连、未知国际默认代理。
+// 版本：2026-11-13 URLTest 自动择优修订版
+// 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
+// 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
 
 function main(config, profileName) {
@@ -86,7 +87,7 @@ function main(config, profileName) {
   // 手动池保留可用的地区节点；自动池只纳入明确识别地区的真实节点。
   const gptManual = pickOrdered(["US", "JP", "SG", "KR", "GB", "TW"]);
   // GPT 自动优先美国，其次日本、新加坡、韩国、英国；台湾保留手动，不自动选。
-  const gptAuto = pickAutoOrdered(["US", "JP", "SG", "KR", "GB"]);
+  const gptAuto = pickAutoOrdered(["TW", "US", "JP", "SG", "KR", "GB"]);
 
   const googleManual = pickOrdered(["US", "SG", "JP", "TW", "HK", "KR", "GB"]);
   // Google 自动固定优先级：美国 -> 新加坡 -> 日本。
@@ -155,35 +156,36 @@ function main(config, profileName) {
     });
   }
 
-  // 每项业务只提供一个自动入口；不再同时暴露“稳定自动”和“低延迟自动”两个容易混淆的组。
+  // 自动组统一使用 URLTest：按各业务检测地址的响应延迟择优。
+  // 180 秒检测一次，40ms 切换容差，减少慢节点长期占用与小幅抖动造成的频繁切换。
   addService(
-    "💬 ChatGPT", "♻️ GPT自动", "fallback", gptAuto, gptManual,
-    { url: "https://chatgpt.com/", expectedStatus: "200/301/302", interval: 300, timeout: 8000 }
+    "💬 ChatGPT", "♻️ GPT自动", "url-test", gptAuto, gptManual,
+    { url: "https://chatgpt.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   addService(
-    "🌐 Google", "♻️ Google自动", "fallback", googleAuto, googleManual,
-    { url: "https://www.google.com/generate_204", expectedStatus: "204", interval: 300, timeout: 8000 }
+    "🌐 Google", "♻️ Google自动", "url-test", googleAuto, googleManual,
+    { url: "https://www.google.com/generate_204", expectedStatus: "204", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   addService(
     "📱 TikTok", "♻️ TikTok自动", "url-test", tiktokAuto, tiktokManual,
-    { url: "https://www.tiktok.com/", expectedStatus: "200/301/302", interval: 600, timeout: 8000, tolerance: 80 }
+    { url: "https://www.tiktok.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   addService(
-    "🪆 俄站", "♻️ 俄站自动", "fallback", russianAuto, russianManual,
-    { url: "https://www.gstatic.com/generate_204", expectedStatus: "204", interval: 300, timeout: 8000 }
+    "🪆 俄站", "♻️ 俄站自动", "url-test", russianAuto, russianManual,
+    { url: "https://yandex.ru/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   addService(
-    "☁️ OneDrive", "♻️ OneDrive自动", "fallback", onedriveAuto, onedriveManual,
-    { url: "https://onedrive.live.com/", expectedStatus: "200/301/302", interval: 300, timeout: 8000 }
+    "☁️ OneDrive", "♻️ OneDrive自动", "url-test", onedriveAuto, onedriveManual,
+    { url: "https://onedrive.live.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   addService(
     "🎮 Steam", "♻️ Steam自动", "url-test", steamAuto, steamManual,
-    { url: "https://store.steampowered.com/", expectedStatus: "200/301/302", interval: 600, timeout: 8000, tolerance: 80 }
+    { url: "https://store.steampowered.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   groups.push({
@@ -195,7 +197,7 @@ function main(config, profileName) {
 
   addService(
     "🌍 国际默认", "♻️ 国际自动", "url-test", intlAuto, intlManual,
-    { url: "https://www.gstatic.com/generate_204", expectedStatus: "204", interval: 300, timeout: 8000, tolerance: 80 }
+    { url: "https://www.gstatic.com/generate_204", expectedStatus: "204", interval: 180, timeout: 8000, tolerance: 40 }
   );
 
   // 完全重建策略组，避免机场模板组（Emby、iQiyi、Disney 等）重新出现。
