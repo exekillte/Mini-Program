@@ -18,12 +18,12 @@
       "id": "clash-verge-rev-stable-routing",
       "name": "Clash Verge Rev 智能分流扩展",
       "type": "clash-verge-script",
-      "version": "2026-11-13",
+      "version": "2026-11-13.2",
       "status": "testing",
       "sourcePath": "network/clash-verge-rev/clash-verge-rev-extension.js",
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
-      "notes": "URLTest 自动择优修订版；180 秒检测间隔、40ms 切换容差。真实订阅实机验证前保持测试状态。"
+      "notes": "GPT 专用探测与持续测速修订版：chatgpt.com/api/auth/providers、lazy:false、90 秒检测、30ms 容差；尚待真实订阅实测。"
     },
     {
       "id": "pdf-toolbox",
