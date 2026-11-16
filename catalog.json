@@ -18,12 +18,12 @@
       "id": "clash-verge-rev-stable-routing",
       "name": "Clash Verge Rev 智能分流扩展",
       "type": "clash-verge-script",
-      "version": "2026-11-13.2",
+      "version": "2026-11-16.1",
       "status": "testing",
       "sourcePath": "network/clash-verge-rev/clash-verge-rev-extension.js",
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
-      "notes": "GPT 专用探测与持续测速修订版：chatgpt.com/api/auth/providers、lazy:false、90 秒检测、30ms 容差；尚待真实订阅实测。"
+      "notes": "GPT 自动组改为 Fallback 故障转移：按日本→美国→新加坡→台湾→韩国→英国顺序选择第一个健康节点；60 秒检测、3000ms 超时、lazy:false、max-failed-times:2。非最低延迟择优；真实订阅实测待完成。"
     },
     {
       "id": "pdf-toolbox",

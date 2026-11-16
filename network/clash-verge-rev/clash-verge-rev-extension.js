@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-13.2 GPT 专用探测与持续测速修订版
+// 版本：2026-11-16.1 GPT Fallback 故障转移修订版
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -130,8 +130,11 @@ function main(config, profileName) {
         timeout: health.timeout || 8000,
         lazy: health.lazy === undefined ? true : health.lazy,
         hidden: true,
-        "max-failed-times": 2
       };
+
+      if (health.maxFailedTimes !== undefined) {
+        autoGroup["max-failed-times"] = health.maxFailedTimes;
+      }
 
       if (health.expectedStatus) {
         autoGroup["expected-status"] = health.expectedStatus;
@@ -156,18 +159,18 @@ function main(config, profileName) {
     });
   }
 
-  // 自动组统一使用 URLTest：按各业务检测地址的响应延迟择优。
-  // ChatGPT 使用公开认证提供商入口作为探测目标，避免只测首页静态壳。
-  // lazy:false 使 GPT 自动组即使暂时未被选中，也持续更新节点健康状态。
-  // 注意：HTTP 探测不能验证已登录会话、Cloudflare 人机验证或对话 WebSocket。
+  // GPT 改用 Fallback，避免 URLTest.fastNode 的缓存选择路径。
+  // Fallback 每次按当前代理列表顺序寻找第一个通过本组健康检查的节点。
+  // 日本作为首选，美国作为第一故障备援；这不是最低延迟排序。
+  // 手动测速可能绕过 expected-status 并污染同 URL 健康状态，验证时不要使用客户端手动测速。
   addService(
-    "💬 ChatGPT", "♻️ GPT自动", "url-test", gptAuto, gptManual,
+    "💬 ChatGPT", "♻️ GPT自动", "fallback", gptAuto, gptManual,
     {
       url: "https://chatgpt.com/api/auth/providers",
       expectedStatus: "200",
-      interval: 90,
-      timeout: 5000,
-      tolerance: 30,
+      interval: 60,
+      timeout: 3000,
+      maxFailedTimes: 2,
       lazy: false
     }
   );
