@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-16.1 GPT Fallback 故障转移修订版
+// 版本：2026-11-18.1 GPT 双自动策略与手动隔离修订版
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -85,9 +85,10 @@ function main(config, profileName) {
   }
 
   // 手动池保留可用的地区节点；自动池只纳入明确识别地区的真实节点。
-  const gptManual = pickOrdered(["US", "JP", "SG", "KR", "GB", "TW"]);
-  // GPT 自动候选顺序：日本 -> 美国 -> 新加坡 -> 台湾 -> 韩国 -> 英国。
-  const gptAuto = pickAutoOrdered(["JP", "US", "SG", "TW", "KR", "GB"]);
+  // GPT 候选地区顺序：美国 -> 新加坡 -> 台湾 -> 日本 -> 韩国 -> 英国。
+  // URLTest 会按 ChatGPT 站点探测延迟择优；该顺序主要影响延迟相同及备用 Fallback。
+  const gptManual = pickOrdered(["US", "SG", "TW", "JP", "KR", "GB"]);
+  const gptAuto = pickAutoOrdered(["US", "SG", "TW", "JP", "KR", "GB"]);
 
   const googleManual = pickOrdered(["US", "SG", "JP", "TW", "HK", "KR", "GB"]);
   // Google 自动固定优先级：美国 -> 新加坡 -> 日本。
@@ -159,21 +160,67 @@ function main(config, profileName) {
     });
   }
 
-  // GPT 改用 Fallback，避免 URLTest.fastNode 的缓存选择路径。
-  // Fallback 每次按当前代理列表顺序寻找第一个通过本组健康检查的节点。
-  // 日本作为首选，美国作为第一故障备援；这不是最低延迟排序。
-  // 手动测速可能绕过 expected-status 并污染同 URL 健康状态，验证时不要使用客户端手动测速。
-  addService(
-    "💬 ChatGPT", "♻️ GPT自动", "fallback", gptAuto, gptManual,
-    {
-      url: "https://chatgpt.com/api/auth/providers",
-      expectedStatus: "200",
-      interval: 60,
-      timeout: 3000,
-      maxFailedTimes: 2,
-      lazy: false
+  // GPT 使用双自动策略，但把手动节点收进独立子组，避免顶层选择器误选单节点后绕过自动组。
+  // 主自动组：URLTest 以 ChatGPT 主页 HTTP 200 探测结果择优；60 秒刷新，100ms 容差抑制小幅抖动。
+  // 备用自动组：Fallback 按 US -> SG -> TW -> JP -> KR -> GB 顺序选择第一个健康节点。
+  // 两组都只验证 ChatGPT 主页可达性，不等价于 WebSocket Upgrade 或模型 SSE 长连接测试。
+  function addChatGPTService(autoNodes, manualNodes) {
+    const candidates = unique(autoNodes);
+    const manual = unique(manualNodes);
+
+    if (candidates.length > 0) {
+      groups.push({
+        name: "♻️ GPT自动",
+        type: "url-test",
+        proxies: candidates,
+        url: "https://chatgpt.com/",
+        interval: 60,
+        timeout: 2500,
+        lazy: false,
+        "max-failed-times": 1,
+        "expected-status": "200",
+        tolerance: 100,
+        hidden: true,
+      });
+
+      groups.push({
+        name: "🛟 GPT故障转移",
+        type: "fallback",
+        proxies: candidates,
+        url: "https://chatgpt.com/",
+        interval: 30,
+        timeout: 2500,
+        lazy: true,
+        "max-failed-times": 1,
+        "expected-status": "200",
+        hidden: true,
+      });
     }
-  );
+
+    if (manual.length > 0) {
+      groups.push({
+        name: "🖐 GPT手动",
+        type: "select",
+        proxies: manual,
+        "default-selected": manual[0],
+      });
+    }
+
+    const options = unique([
+      ...(candidates.length > 0 ? ["♻️ GPT自动", "🛟 GPT故障转移"] : []),
+      ...(manual.length > 0 ? ["🖐 GPT手动"] : []),
+    ]);
+    if (options.length === 0) options.push("REJECT");
+
+    groups.push({
+      name: "💬 ChatGPT",
+      type: "select",
+      proxies: options,
+      "default-selected": candidates.length > 0 ? "♻️ GPT自动" : options[0],
+    });
+  }
+
+  addChatGPTService(gptAuto, gptManual);
 
   addService(
     "🌐 Google", "♻️ Google自动", "url-test", googleAuto, googleManual,
@@ -226,6 +273,7 @@ function main(config, profileName) {
 
   config.rules = [
     // ChatGPT / OpenAI：主站、认证、Cloudflare 验证、WorkOS 等尽量固定同一出口。
+    "DOMAIN,ws.chatgpt.com," + GPT,
     "DOMAIN-SUFFIX,chatgpt.com," + GPT,
     "DOMAIN-SUFFIX,chat.openai.com," + GPT,
     "DOMAIN-SUFFIX,openai.com," + GPT,
