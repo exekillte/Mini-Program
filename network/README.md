@@ -11,11 +11,22 @@
 
 电脑端 Clash Verge Rev 与 Android 端 FlClash 共用同一份 JavaScript 分流脚本，避免两端的业务规则长期分叉。
 
+- **当前脚本版本：** `2026-11-18.1`
 - **统一脚本源码：** [clash-verge-rev-extension.js](clash-verge-rev/clash-verge-rev-extension.js)
 - **桌面端使用说明：** [Clash Verge Rev 智能分流扩展](clash-verge-rev/README.md)
 - **安卓端操作流程：** [FlClash Android 网络分流配置流程](flclash-android/README.md)
 
-安卓端需要在 FlClash 中创建 JavaScript 脚本，并在当前订阅的「覆写」设置中明确绑定该脚本；仅保存脚本不会自动启用。详细步骤、策略组验收与回滚方法见安卓端指南。
+### ChatGPT 代理组
+
+顶层 ChatGPT 选择器现在只提供三个入口：
+
+1. `♻️ GPT自动`：URLTest，按 ChatGPT 主页探测延迟择优，默认策略。
+2. `🛟 GPT故障转移`：Fallback，按美国 → 新加坡 → 台湾 → 日本 → 韩国 → 英国的顺序选择首个健康节点。
+3. `🖐 GPT手动`：人工选择具体节点。
+
+应用后应确认顶层 ChatGPT 组实际选择的是 `♻️ GPT自动`。主页 HTTP 探测不能验证模型 SSE/WebSocket 长连接，也不能迁移已经建立的旧连接；详细限制与验收方法见桌面端指南。
+
+安卓端需要在 FlClash 中创建 JavaScript 脚本，并在当前订阅的「覆写」设置中明确绑定该脚本；仅保存脚本不会自动启用。
 
 ## 维护规则
 
