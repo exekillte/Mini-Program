@@ -5,7 +5,7 @@
 - 客户端：FlClash（Android）
 - 配置方式：JavaScript 脚本覆写
 - 脚本来源：`network/clash-verge-rev/clash-verge-rev-extension.js`
-- 当前脚本版本：`2026-11-16.1`
+- 当前脚本版本：`2026-11-18.1`
 - 脚本 Raw URL：<https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js>
 
 > 本流程记录的是本次成功操作路径。FlClash 后续版本可能调整菜单名称或位置；若界面不同，以当前版本实际显示为准。
@@ -61,7 +61,7 @@
 
 | 顶层策略组 | 对应自动组 | 选择机制 |
 |---|---|---|
-| 💬 ChatGPT | ♻️ GPT自动 | Fallback 故障转移 |
+| 💬 ChatGPT | ♻️ GPT自动 / 🛟 GPT故障转移 / 🖐 GPT手动 | URLTest 默认、Fallback 备用、Select 手动 |
 | 🌐 Google | ♻️ Google自动 | URLTest |
 | 📱 TikTok | ♻️ TikTok自动 | URLTest |
 | 🪆 俄站 | ♻️ 俄站自动 | URLTest |
@@ -72,11 +72,17 @@
 
 各顶层业务组应选择对应的自动组，而不是固定选择某一条单独节点。ChatGPT 组尤其要确认上层选择的是 `♻️ GPT自动`，否则会绕过自动故障转移。
 
-### GPT 自动组顺序
+### GPT 策略组（2026-11-18.1）
 
-日本 → 美国 → 新加坡 → 台湾 → 韩国 → 英国。
+顶层「💬 ChatGPT」只保留三个入口：
 
-该组使用 Fallback：按顺序选择第一个通过 GPT 专用健康检查的节点。它不是最低延迟排序；如果日本通过健康检查，即使美国延迟更低，也可能继续优先使用日本。健康检查通过也不等于登录、Cloudflare 验证、WebSocket、消息提交和流式响应全部正常。
+1. **♻️ GPT自动（默认）**：URLTest，探测 `https://chatgpt.com/`，要求 HTTP 200；60 秒检测间隔、2500ms 超时、100ms 容差、`max-failed-times: 1`、`lazy: false`。它按 ChatGPT 主页探测延迟择优。
+2. **🛟 GPT故障转移（备用）**：Fallback，30 秒检测间隔、2500ms 超时、`max-failed-times: 1`、`lazy: true`。候选顺序为美国 → 新加坡 → 台湾 → 日本 → 韩国 → 英国，按顺序选择第一个健康节点，不比较延迟。
+3. **🖐 GPT手动**：需要手动指定出口时，先进入此子组，再选择具体节点。
+
+**检查顶层实际选择。** 应显示「♻️ GPT自动」。如果显示「🛟 GPT故障转移」或「🖐 GPT手动」，当前流量就不会经过 GPT自动。
+
+主页 HTTP 探测不是 WebSocket Upgrade 或模型流式传输测试。健康检查通过不代表账号登录、Cloudflare 验证、WebSocket、消息提交和长时间流式响应全部正常。代理组切换也不能迁移已经建立的旧连接。
 
 ## 六、验收
 
@@ -123,4 +129,4 @@ Android 与桌面端共用同一份分流脚本。更新时：
 3. 保存后重新预览、应用并执行本指南的验收项目。
 4. 不要把机场订阅地址、账号凭据或设备专属信息写入公开脚本或文档。
 
-相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。
+相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。两端共用 `2026-11-18.1` 脚本。
