@@ -1,3 +1,28 @@
+## 2026-11-18.1 — GPT 双自动策略与手动隔离
+
+### Changed
+- GPT 默认自动组从 Fallback 调整为 URLTest，探测目标改为 `https://chatgpt.com/`，要求 HTTP 200。
+- GPT URLTest：60 秒周期、2500ms 超时、100ms 容差、`max-failed-times: 1`、`lazy: false`。
+- 新增 GPT Fallback 备用组：30 秒周期、2500ms 超时、`max-failed-times: 1`、`lazy: true`。
+- GPT Fallback 候选优先顺序调整为美国 → 新加坡 → 台湾 → 日本 → 韩国 → 英国。
+- 新增独立 GPT 手动选择子组；顶层 ChatGPT 选择器只提供 GPT 自动、GPT 故障转移、GPT 手动三个入口，避免单节点选项绕过自动组。
+- 为 `ws.chatgpt.com` 增加显式 ChatGPT 分流规则。
+- 其他业务组及国内/国际分流规则保持不变。
+
+### Rationale
+- 旧版 Fallback 只按固定顺序选择首个健康节点，不比较探测延迟；若首选节点的 HTTP 探测成功但长连接不稳定，它仍可能继续被选中。
+- 当前 URLTest 直接使用扩展筛选出的内联节点列表，不使用 `proxy-providers` / `include-all` 路径；Mihomo #3337 的复现配置使用 provider 刷新路径，不能简单等同于本脚本的内联候选列表。
+- 不采用嵌套 Fallback / 地区 URLTest 结构，规避 Mihomo #2588 所报告的嵌套组健康状态问题。
+- GPT 主页 HTTP 探测仍只是应用层可达性近似指标，不能验证用户会话下的 SSE/WebSocket 长连接，也不能迁移已有连接。
+
+### Validation
+- JavaScript 在 V8 中编译并执行通过。
+- 使用模拟内联订阅验证 GPT 顶层默认选择为 `♻️ GPT自动`。
+- 验证 GPT 自动组为 URLTest、故障转移组为 Fallback、手动节点被隔离在 `🖐 GPT手动` 子组。
+- 验证顶层 ChatGPT 选择器不再直接暴露单个节点，避免绕过自动组。
+- 验证 `ws.chatgpt.com` 明确命中 ChatGPT 规则。
+- 尚未在用户真实订阅和实际长时间模型流式会话中完成实机稳定性验收。
+
 # Changelog
 
 ## 2026-11-16.1 — GPT Fallback 故障转移
