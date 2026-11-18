@@ -5,7 +5,7 @@
 - 客户端：FlClash（Android）
 - 配置方式：JavaScript 脚本覆写
 - 脚本来源：`network/clash-verge-rev/clash-verge-rev-extension.js`
-- 当前脚本版本：`2026-11-18.1`
+- 当前脚本版本：`2026-11-19.1`
 - 脚本 Raw URL：<https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js>
 
 > 本流程记录的是本次成功操作路径。FlClash 后续版本可能调整菜单名称或位置；若界面不同，以当前版本实际显示为准。
@@ -72,7 +72,7 @@
 
 各顶层业务组应选择对应的自动组，而不是固定选择某一条单独节点。ChatGPT 组尤其要确认上层选择的是 `♻️ GPT自动`，否则会绕过自动故障转移。
 
-### GPT 策略组（2026-11-18.1）
+### GPT 策略组（2026-11-19.1）
 
 顶层「💬 ChatGPT」只保留三个入口：
 
@@ -84,7 +84,22 @@
 
 主页 HTTP 探测不是 WebSocket Upgrade 或模型流式传输测试。健康检查通过不代表账号登录、Cloudflare 验证、WebSocket、消息提交和长时间流式响应全部正常。代理组切换也不能迁移已经建立的旧连接。
 
-## 六、验收
+### 其他业务自动组（2026-11-19.1）
+
+| 自动组 | 检测间隔 | 超时 | 容差 | 失败阈值 | 健康检查目标 |
+|---|---:|---:|---:|---:|---|
+| Google | 60 秒 | 5000ms | 100ms | 1 | Google `generate_204`，HTTP 204 |
+| TikTok | 90 秒 | 5000ms | 80ms | 1 | TikTok 首页，HTTP 200/301/302 |
+| 俄站 | 120 秒 | 5000ms | 80ms | 1 | Yandex，HTTP 200/301/302 |
+| OneDrive | 90 秒 | 5000ms | 80ms | 1 | OneDrive 首页，HTTP 200/301/302 |
+| Steam | 120 秒 | 5000ms | 80ms | 1 | Steam 商店，HTTP 200/301/302 |
+| 国际默认 | 60 秒 | 5000ms | 100ms | 1 | gstatic `generate_204`，HTTP 204 |
+
+这些组继续使用各自业务的探测地址，自动选择类型仍为 URLTest；没有增加固定顺序的 Fallback，以免再次出现只使用第一个健康节点、不比较延迟的问题。`lazy: true` 表示未选中的组不做周期检测。
+
+**测速显示注意：** Clash Verge Rev 已有手动测速可能忽略 `expected-status`、以及界面延迟缓存可能滞后的公开问题（[Issue #8531](https://github.com/clash-verge-rev/clash-verge-rev/issues/8531)、[Issue #8646](https://github.com/clash-verge-rev/clash-verge-rev/issues/8646)）。单节点显示绿色不等于它通过了对应业务组的健康检查；需要同时验证真实网站访问。
+
+## 七、验收
 
 逐项打开网站并在 FlClash「连接」页检查实际命中的策略组：
 
@@ -99,7 +114,7 @@
 
 验收不应只看测速数字，还要确认网页能打开、账号状态能加载、消息能提交，以及连续使用时连接是否稳定。节点测速延迟仅是参考值，不等同于业务可用性或下载吞吐量。
 
-## 七、常见问题与回滚
+## 八、常见问题与回滚
 
 ### 脚本列表中找不到脚本
 - 检查脚本是否已经保存。
@@ -120,7 +135,7 @@
 3. 重新加载原订阅配置。
 4. 确认原配置恢复正常后，再检查脚本错误。
 
-## 八、版本维护
+## 九、版本维护
 
 Android 与桌面端共用同一份分流脚本。更新时：
 
@@ -129,4 +144,4 @@ Android 与桌面端共用同一份分流脚本。更新时：
 3. 保存后重新预览、应用并执行本指南的验收项目。
 4. 不要把机场订阅地址、账号凭据或设备专属信息写入公开脚本或文档。
 
-相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。两端共用 `2026-11-18.1` 脚本。
+相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。两端共用 `2026-11-19.1` 脚本。

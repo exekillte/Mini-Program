@@ -1,3 +1,28 @@
+## 2026-11-19.1 — 全业务自动健康检查同步
+
+### Changed
+- 保留 GPT 自动 URLTest、GPT Fallback 备用和 GPT 手动子组，不改变 GPT 候选地区顺序。
+- Google 自动组：60 秒检测、5000ms 超时、100ms 容差、`max-failed-times: 1`、`lazy: true`；健康检查仍使用 Google `generate_204`，要求 HTTP 204。
+- 国际默认自动组：60 秒检测、5000ms 超时、100ms 容差、`max-failed-times: 1`、`lazy: true`；继续使用 gstatic `generate_204`。
+- TikTok 与 OneDrive 自动组：90 秒检测、5000ms 超时、80ms 容差、`max-failed-times: 1`。
+- 俄站与 Steam 自动组：120 秒检测、5000ms 超时、80ms 容差、`max-failed-times: 1`。
+- 各业务组继续使用自己的健康检查 URL 与预期 HTTP 状态，不把 GPT 的检测地址错误复用到其他业务。
+- 不为其他业务组增加 Fallback；Fallback 只按顺序选择首个健康节点，不比较延迟。
+- 国内直连、国际默认兜底分流规则、业务域名映射及节点地区池保持不变。
+
+### Rationale
+- `2026-11-18.1` 只为 GPT 设置了 60 秒周期、2500ms 超时和 `max-failed-times: 1`；Google 等其他自动组仍使用 180 秒周期、8000ms 超时、40ms 容差和默认失败阈值 5。
+- Mihomo 文档说明 URLTest 按探测 URL 结果选择低延迟节点；`lazy` 控制未选中组是否检测，`max-failed-times` 控制触发主动健康检查的失败阈值。
+- Clash Verge Rev #8531 报告手动测速可能忽略 `expected-status` 并覆盖 URLTest 健康状态；#8646 报告前端可能显示陈旧测速缓存。因此客户端单节点绿色数字不一定与业务组的健康检查结果可直接比较。
+- 采用更短间隔和更低失败阈值，但保留各业务自己的探测目标，避免用一个通用 URL 误判特定服务可用性。
+
+### Validation
+- JavaScript 在 V8 中编译通过。
+- 使用模拟内联订阅验证配置生成成功、八个顶层业务组存在、GPT 默认自动组不变。
+- 验证 Google、TikTok、俄站、OneDrive、Steam、国际默认自动组的 URL、状态码、间隔、超时、容差和失败阈值。
+- 验证国内直连规则与国际默认 MATCH 兜底仍存在。
+- 未在用户真实订阅上完成实机验证；Google 自动组是否能从当前 Timeout 节点切换到其他节点，仍需在应用后观察内核健康状态和真实访问结果。
+
 ## 2026-11-18.1 — GPT 双自动策略与手动隔离
 
 ### Changed

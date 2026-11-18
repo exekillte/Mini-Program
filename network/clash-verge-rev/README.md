@@ -1,6 +1,6 @@
 # Clash Verge Rev 智能分流扩展
 
-- 版本标识：`2026-11-18.1`
+- 版本标识：`2026-11-19.1`
 - 状态：**试运行；脚本结构与模拟配置已验证，真实机场长连接稳定性待实测**
 - 类型：Clash Verge Rev / FlClash 共用的 Mihomo 订阅扩展脚本
 - 入口：`main(config, profileName)`
@@ -13,13 +13,15 @@
 
 ## 本版改动
 
-本版重点重做 ChatGPT 代理组，不改动其他业务组的节点筛选与规则分流：
+本版保留 ChatGPT 双自动结构，并将更积极的健康检查策略同步到 Google、TikTok、俄站、OneDrive、Steam 和国际默认组；业务分流规则与节点地区池原则上不变：
 
 1. **GPT 自动**改为 URLTest：以 ChatGPT 主页 HTTP 200 探测结果比较候选节点延迟。
 2. 新增**GPT 故障转移**：Fallback 作为备用策略，按美国 → 新加坡 → 台湾 → 日本 → 韩国 → 英国顺序选择第一个健康节点。
 3. 新增**GPT 手动**子组：所有人工选择的 GPT 节点集中在这里。
 4. 顶层 ChatGPT 选择器只保留三个入口：GPT 自动、GPT 故障转移、GPT 手动。避免像旧版一样直接点中单个节点后，无意间绕过自动组。
 5. 明确添加 `ws.chatgpt.com` 的 ChatGPT 分流规则；它原本也会被 `chatgpt.com` 后缀规则覆盖，本次增加显式规则便于核验。
+6. 其他业务自动组同步降低健康检查间隔和超时，并将 `max-failed-times` 调整为 1；Google 与国际默认组采用 60 秒检测，其他业务组采用 90–120 秒检测。
+7. 不为其他业务组增加 Fallback：Fallback 只按顺序选择第一个健康节点，不比较延迟，避免重新引入固定地区优先导致的锁点问题。
 
 ## 策略组
 
@@ -116,9 +118,26 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 - 如果输出中途断开，记录当时顶层 ChatGPT 选择的子组、实际节点、时间及是否发生切换。
 - 如果要对比 URLTest 与 Fallback，请一次只选择一个策略，避免把手动节点选择误当成自动组行为。
 
-## 其他业务组
+## 其他业务自动组（2026-11-19.1）
 
-其他业务组继续使用原有 URLTest 设置：180 秒检测间隔、8000ms 超时、40ms 容差。国内直连和国际默认规则保持原有结构。
+| 自动组 | 健康检查地址 | 预期状态 | 间隔 | 超时 | 容差 | `max-failed-times` | `lazy` |
+|---|---|---:|---:|---:|---:|---:|---|
+| ♻️ Google自动 | `https://www.google.com/generate_204` | 204 | 60 秒 | 5000ms | 100ms | 1 | true |
+| ♻️ TikTok自动 | `https://www.tiktok.com/` | 200/301/302 | 90 秒 | 5000ms | 80ms | 1 | true |
+| ♻️ 俄站自动 | `https://yandex.ru/` | 200/301/302 | 120 秒 | 5000ms | 80ms | 1 | true |
+| ♻️ OneDrive自动 | `https://onedrive.live.com/` | 200/301/302 | 90 秒 | 5000ms | 80ms | 1 | true |
+| ♻️ Steam自动 | `https://store.steampowered.com/` | 200/301/302 | 120 秒 | 5000ms | 80ms | 1 | true |
+| ♻️ 国际自动 | `https://www.gstatic.com/generate_204` | 204 | 60 秒 | 5000ms | 100ms | 1 | true |
+
+Google 自动候选仍为美国、新加坡、日本；台湾和香港保留在手动节点列表中，以免自动出口在不同地区间频繁变化而影响 Google 账号、付款或地区服务。若需要测试台湾/香港，应在 Google 顶层组中手动选择对应节点。
+
+`lazy: true` 表示该自动组未被选中时不做周期检测；对应业务组被规则实际使用、且父级选择自动组时才执行检测。`max-failed-times: 1` 用于降低连接失败后触发主动健康检查的门槛。URLTest 仍按各自健康检查 URL 的延迟择优，不等同于真实网页完整加载、下载吞吐量或流式连接质量。
+
+### 不要把客户端绿色测速当作业务组健康证明
+
+Clash Verge Rev 有已报告问题：手动延迟测试可能不应用策略组的 `expected-status`，并覆盖 URLTest 使用的同 URL 健康状态（[Issue #8531](https://github.com/clash-verge-rev/clash-verge-rev/issues/8531)）；另有 Windows 界面显示旧测速缓存、与内核健康记录不同步的报告（[Issue #8646](https://github.com/clash-verge-rev/clash-verge-rev/issues/8646)）。因此，单节点显示绿色不一定代表它通过了 Google 组要求的 HTTP 204 检查。应以对应自动组的健康状态和真实业务访问结果综合判断。
+
+国内直连和国际默认规则结构保持原有设计；本版没有改动域名分流顺序、国内直连规则或国际默认代理兜底。
 
 ## 重要限制
 

@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-18.1 GPT 双自动策略与手动隔离修订版
+// 版本：2026-11-19.1 全业务组健康检查同步修订版
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -222,29 +222,30 @@ function main(config, profileName) {
 
   addChatGPTService(gptAuto, gptManual);
 
+  // Google：高频检查、较短超时、单次失败后主动复检；保留美国/新加坡/日本自动池，台湾/香港仍可手动选择。
   addService(
     "🌐 Google", "♻️ Google自动", "url-test", googleAuto, googleManual,
-    { url: "https://www.google.com/generate_204", expectedStatus: "204", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://www.google.com/generate_204", expectedStatus: "204", interval: 60, timeout: 5000, tolerance: 100, maxFailedTimes: 1, lazy: true }
   );
 
   addService(
     "📱 TikTok", "♻️ TikTok自动", "url-test", tiktokAuto, tiktokManual,
-    { url: "https://www.tiktok.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://www.tiktok.com/", expectedStatus: "200/301/302", interval: 90, timeout: 5000, tolerance: 80, maxFailedTimes: 1, lazy: true }
   );
 
   addService(
     "🪆 俄站", "♻️ 俄站自动", "url-test", russianAuto, russianManual,
-    { url: "https://yandex.ru/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://yandex.ru/", expectedStatus: "200/301/302", interval: 120, timeout: 5000, tolerance: 80, maxFailedTimes: 1, lazy: true }
   );
 
   addService(
     "☁️ OneDrive", "♻️ OneDrive自动", "url-test", onedriveAuto, onedriveManual,
-    { url: "https://onedrive.live.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://onedrive.live.com/", expectedStatus: "200/301/302", interval: 90, timeout: 5000, tolerance: 80, maxFailedTimes: 1, lazy: true }
   );
 
   addService(
     "🎮 Steam", "♻️ Steam自动", "url-test", steamAuto, steamManual,
-    { url: "https://store.steampowered.com/", expectedStatus: "200/301/302", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://store.steampowered.com/", expectedStatus: "200/301/302", interval: 120, timeout: 5000, tolerance: 80, maxFailedTimes: 1, lazy: true }
   );
 
   groups.push({
@@ -254,9 +255,10 @@ function main(config, profileName) {
     "default-selected": "DIRECT"
   });
 
+  // 国际默认：兜底组使用高频健康检查，避免未知国际站点长期留在失效出口。
   addService(
     "🌍 国际默认", "♻️ 国际自动", "url-test", intlAuto, intlManual,
-    { url: "https://www.gstatic.com/generate_204", expectedStatus: "204", interval: 180, timeout: 8000, tolerance: 40 }
+    { url: "https://www.gstatic.com/generate_204", expectedStatus: "204", interval: 60, timeout: 5000, tolerance: 100, maxFailedTimes: 1, lazy: true }
   );
 
   // 完全重建策略组，避免机场模板组（Emby、iQiyi、Disney 等）重新出现。

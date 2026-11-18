@@ -11,7 +11,7 @@
 
 电脑端 Clash Verge Rev 与 Android 端 FlClash 共用同一份 JavaScript 分流脚本，避免两端的业务规则长期分叉。
 
-- **当前脚本版本：** `2026-11-18.1`
+- **当前脚本版本：** `2026-11-19.1`
 - **统一脚本源码：** [clash-verge-rev-extension.js](clash-verge-rev/clash-verge-rev-extension.js)
 - **桌面端使用说明：** [Clash Verge Rev 智能分流扩展](clash-verge-rev/README.md)
 - **安卓端操作流程：** [FlClash Android 网络分流配置流程](flclash-android/README.md)
@@ -25,6 +25,12 @@
 3. `🖐 GPT手动`：人工选择具体节点。
 
 应用后应确认顶层 ChatGPT 组实际选择的是 `♻️ GPT自动`。主页 HTTP 探测不能验证模型 SSE/WebSocket 长连接，也不能迁移已经建立的旧连接；详细限制与验收方法见桌面端指南。
+
+### 其他业务自动组
+
+Google、TikTok、俄站、OneDrive、Steam 和国际默认组均使用各自的 URLTest 健康检查目标，不再沿用旧版统一的 180 秒间隔、8000ms 超时和默认失败阈值。新版 Google 与国际默认组为 60 秒检测；TikTok 与 OneDrive 为 90 秒；俄站与 Steam 为 120 秒。各组均设置 `max-failed-times: 1`，并保留各自业务目标的预期 HTTP 状态。
+
+不为这些组增加固定顺序的 Fallback：Fallback 不是最低延迟择优。Clash Verge Rev 的手动测速与 UI 缓存存在公开问题，单节点绿色延迟不能替代业务组健康检查结果；详见桌面端指南。
 
 安卓端需要在 FlClash 中创建 JavaScript 脚本，并在当前订阅的「覆写」设置中明确绑定该脚本；仅保存脚本不会自动启用。
 
