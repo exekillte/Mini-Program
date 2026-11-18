@@ -18,13 +18,13 @@
       "id": "clash-verge-rev-stable-routing",
       "name": "Clash Verge Rev / FlClash 智能分流脚本",
       "type": "mihomo-routing-script",
-      "version": "2026-11-16.1",
+      "version": "2026-11-18.1",
       "status": "testing",
       "sourcePath": "network/clash-verge-rev/clash-verge-rev-extension.js",
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
       "androidGuidePath": "network/flclash-android/README.md",
-      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 自动组使用 Fallback，按日本→美国→新加坡→台湾→韩国→英国顺序选择第一个健康节点；60 秒检测、3000ms 超时、lazy:false、max-failed-times:2。非最低延迟择优；真实订阅与客户端组合仍需持续实测。"
+      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 默认 URLTest（chatgpt.com 主页 HTTP 200，60 秒检测、2500ms 超时、100ms 容差、max-failed-times:1），另有 Fallback 备用组和独立手动组。HTTP 探测不等于 SSE/WebSocket 长连接测试；真实长连接稳定性待实测。"
     },
     {
       "id": "pdf-toolbox",
