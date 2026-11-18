@@ -18,7 +18,7 @@
 | 程序 | 类型 | 版本 | 状态 |
 |---|---|---:|---|
 | 学习通作业图文导出（AI友好版） | Tampermonkey 用户脚本 | 1.3.1 | 使用中 |
-| Clash Verge Rev 智能分流扩展 | 代理客户端共享分流脚本 | 2026-11-16.1 | 试运行，待真实订阅验证 |
+| Clash Verge Rev / FlClash 智能分流扩展 | 代理客户端共享分流脚本 | 2026-11-18.1 | 试运行，真实长连接稳定性待实测 |
 
 ### 学习通作业图文导出
 
@@ -28,12 +28,12 @@
 ### 网络配置与智能分流
 
 - [网络配置总目录](network/README.md)
-- [统一分流脚本源码](https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js)
+- [统一分流脚本源码（2026-11-18.1）](https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js)
 - [Clash Verge Rev 桌面端说明](network/clash-verge-rev/README.md)
 - [FlClash Android 操作流程](network/flclash-android/README.md)
 - [版本记录](network/clash-verge-rev/CHANGELOG.md)
 
-Android 版 FlClash 与桌面端共用同一份分流脚本；安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
+Android 版 FlClash 与桌面端共用同一份分流脚本。ChatGPT 组提供 URLTest 自动择优、Fallback 故障转移和独立手动子组；主页 HTTP 探测不能保证 SSE/WebSocket 长连接不中断，也不能迁移已建立的旧连接。安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
 
 ## 版本维护约定
 
