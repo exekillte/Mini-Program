@@ -1,3 +1,24 @@
+## 2026-11-22.1 — GitHub 专用自动分流与 Bilibili 港澳台手动切换
+
+### Changed
+- 新增 `🐙 GitHub` 顶层策略组和 `♻️ GitHub自动` URLTest 子组，默认自动择优；同时保留非中国节点手动选择。
+- GitHub 自动健康检查使用 `https://github.com/`，预期 HTTP 200；60 秒间隔、5000ms 超时、100ms 容差、`max-failed-times: 1`、`lazy: true`。
+- GitHub 网页、REST API、Raw/Objects/Release、GitHub Assets、Pages、Codespaces 相关域名统一走 GitHub 策略组。
+- 新增 `📺 哔哩哔哩` 手动选择组，默认 `DIRECT`；仅提供机场实际存在且名称可识别的香港、澳门、台湾节点，不做自动测速或自动切换。
+- 将 Bilibili 主站、API、图片、视频 CDN、短链及国际站域名规则置于 `GEOSITE,cn` / `GEOIP,CN` 之前，确保规则模式下手动选择港澳台出口生效。
+- 新增澳门地区节点识别；不把整个共享 `akamaized.net` / `smtcdns.net` CDN 域名整体纳入 Bilibili 代理。
+- 保留 GPT、Google、国际默认及其他业务组的既有探测参数和路由逻辑。
+
+### Rationale
+- GitHub 首页测速只能验证基础 HTTP 可达性，因此专用组覆盖常见 GitHub 页面/API/内容域名，避免资源子域名落入不同出口；实际 Git smart HTTP、SSH、API 认证和 LFS 仍需实机验收。
+- Bilibili 的港澳台内容选择需要在规则模式下明确命中一个可手动控制的选择器。将默认值设为 `DIRECT`，既保持日常国内直连，又允许用户手动指定港澳台出口。
+- Bilibili 规则必须位于通用中国域名/IP 规则之前，否则会被国内直连兜底提前匹配。
+
+### Validation
+- 新增 Node.js 内置模块 smoke test：验证脚本生成、GitHub 自动组与域名分流、Bilibili 默认 DIRECT 与港澳台手动节点范围、规则优先级及原始代理节点不变。
+- JavaScript 语法检查和模拟订阅检查通过后再发布。
+- 未在用户真实机场订阅上实测所有 GitHub 下载链路及 Bilibili 港澳台番剧播放；需用户应用后验收。
+
 ## 2026-11-19.1 — 全业务自动健康检查同步
 
 ### Changed

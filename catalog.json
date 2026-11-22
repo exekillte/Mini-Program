@@ -18,13 +18,13 @@
       "id": "clash-verge-rev-stable-routing",
       "name": "Clash Verge Rev / FlClash 智能分流脚本",
       "type": "mihomo-routing-script",
-      "version": "2026-11-19.1",
+      "version": "2026-11-22.1",
       "status": "testing",
       "sourcePath": "network/clash-verge-rev/clash-verge-rev-extension.js",
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
       "androidGuidePath": "network/flclash-android/README.md",
-      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 保留 URLTest + Fallback + 手动子组；Google、TikTok、俄站、OneDrive、Steam、国际默认组同步更积极的 URLTest 健康检查（60–120 秒、5000ms 超时、max-failed-times:1），各用独立业务探测 URL。HTTP 探测不等于 SSE/WebSocket 长连接测试；真实稳定性待实测。"
+      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 保留 URLTest + Fallback + 手动子组；GitHub 新增专用 URLTest 自动分流；Google、TikTok、俄站、OneDrive、Steam、国际默认组使用独立业务探测 URL；Bilibili 选择器默认 DIRECT，手动选择港澳台节点后在规则模式下代理。HTTP 探测不等于 Git 操作全链路或 SSE/WebSocket 长连接测试；真实稳定性待实测。"
     },
     {
       "id": "pdf-toolbox",

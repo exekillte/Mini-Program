@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-19.1 全业务组健康检查同步修订版
+// 版本：2026-11-22.1 GitHub 自动分流与 Bilibili 港澳台手动分流
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -55,6 +55,7 @@ function main(config, profileName) {
     KR: [/🇰🇷/, /\bKR\b/i, /KOREA|韩国|首尔/i],
     GB: [/🇬🇧/, /\bGB\b/i, /\bUK\b/i, /UNITED\s*KINGDOM|BRITAIN|ENGLAND|英国/i],
     HK: [/🇭🇰/, /\bHK\b/i, /HONG\s*KONG|香港/i],
+    MO: [/🇲🇴/, /\bMO\b/i, /MACAU|MACAO|澳门/i],
     RU: [/🇷🇺/, /\bRU\b/i, /RUSSIA|俄罗斯|莫斯科/i],
     MY: [/🇲🇾/, /\bMY\b/i, /MALAYSIA|马来西亚/i],
     PH: [/🇵🇭/, /\bPH\b/i, /PHILIPPINES|菲律宾/i],
@@ -114,6 +115,17 @@ function main(config, profileName) {
     "JP", "SG", "TW", "US", "KR", "GB", "DE", "NL",
     "CA", "AU", "MY", "PH", "TH", "IN", "ID", "VN"
   ]);
+
+  // GitHub：自动池纳入明确识别的海外真实节点；手动池保留全部非中国节点。
+  // GitHub 首页 HTTP 200 仅检查基础出口可达性，不等于 Git clone/API/LFS 全链路测试。
+  const githubManual = nodes.filter(name => !hasRegion(name, "CN"));
+  const githubAuto = pickAutoOrdered([
+    "HK", "MO", "TW", "JP", "SG", "US", "KR", "GB", "DE", "NL",
+    "CA", "AU", "MY", "PH", "TH", "IN", "ID", "VN"
+  ]);
+
+  // Bilibili：只允许手动选择港澳台节点；默认 DIRECT，不建立自动测速或自动切换。
+  const bilibiliManual = pickOrdered(["HK", "MO", "TW"]);
 
   const groups = [];
 
@@ -222,6 +234,12 @@ function main(config, profileName) {
 
   addChatGPTService(gptAuto, gptManual);
 
+  // GitHub：专用 URLTest，60 秒检测；GitHub 相关域名统一使用同一策略组。
+  addService(
+    "🐙 GitHub", "♻️ GitHub自动", "url-test", githubAuto, githubManual,
+    { url: "https://github.com/", expectedStatus: "200", interval: 60, timeout: 5000, tolerance: 100, maxFailedTimes: 1, lazy: true }
+  );
+
   // Google：高频检查、较短超时、单次失败后主动复检；保留美国/新加坡/日本自动池，台湾/香港仍可手动选择。
   addService(
     "🌐 Google", "♻️ Google自动", "url-test", googleAuto, googleManual,
@@ -255,6 +273,14 @@ function main(config, profileName) {
     "default-selected": "DIRECT"
   });
 
+  // Bilibili：规则模式下始终命中此选择器；默认 DIRECT，手动选择港澳台节点后才走代理。
+  groups.push({
+    name: "📺 哔哩哔哩",
+    type: "select",
+    proxies: unique(["DIRECT", ...bilibiliManual]),
+    "default-selected": "DIRECT"
+  });
+
   // 国际默认：兜底组使用高频健康检查，避免未知国际站点长期留在失效出口。
   addService(
     "🌍 国际默认", "♻️ 国际自动", "url-test", intlAuto, intlManual,
@@ -265,6 +291,8 @@ function main(config, profileName) {
   config["proxy-groups"] = groups;
 
   const GPT = "💬 ChatGPT";
+  const GITHUB = "🐙 GitHub";
+  const BILIBILI = "📺 哔哩哔哩";
   const GOOGLE = "🌐 Google";
   const TIKTOK = "📱 TikTok";
   const RU = "🪆 俄站";
@@ -274,6 +302,41 @@ function main(config, profileName) {
   const INTL = "🌍 国际默认";
 
   config.rules = [
+    // GitHub：网页、REST API、Raw、Release、资源文件及 Pages 统一走专用策略组。
+    "DOMAIN-SUFFIX,github.com," + GITHUB,
+    "DOMAIN-SUFFIX,githubusercontent.com," + GITHUB,
+    "DOMAIN-SUFFIX,githubassets.com," + GITHUB,
+    "DOMAIN-SUFFIX,github.io," + GITHUB,
+    "DOMAIN-SUFFIX,github.dev," + GITHUB,
+    "DOMAIN-SUFFIX,githubpreview.dev," + GITHUB,
+    "DOMAIN-SUFFIX,githubstatus.com," + GITHUB,
+    "DOMAIN-SUFFIX,github.community," + GITHUB,
+    "DOMAIN-SUFFIX,github.blog," + GITHUB,
+    "DOMAIN-SUFFIX,githubcopilot.com," + GITHUB,
+    "DOMAIN-SUFFIX,github-cloud.s3.amazonaws.com," + GITHUB,
+
+    // Bilibili：必须排在 GEOSITE,CN / GEOIP,CN 之前，才能在规则模式下手动切换港澳台出口。
+    "DOMAIN,apiintl.biliapi.net," + BILIBILI,
+    "DOMAIN,upos-hz-mirrorakam.akamaized.net," + BILIBILI,
+    "DOMAIN-SUFFIX,acg.tv," + BILIBILI,
+    "DOMAIN-SUFFIX,acgvideo.com," + BILIBILI,
+    "DOMAIN-SUFFIX,b23.tv," + BILIBILI,
+    "DOMAIN-SUFFIX,bigfun.cn," + BILIBILI,
+    "DOMAIN-SUFFIX,bigfunapp.cn," + BILIBILI,
+    "DOMAIN-SUFFIX,biliapi.com," + BILIBILI,
+    "DOMAIN-SUFFIX,biliapi.net," + BILIBILI,
+    "DOMAIN-SUFFIX,bilibili.co," + BILIBILI,
+    "DOMAIN-SUFFIX,bilibili.com," + BILIBILI,
+    "DOMAIN-SUFFIX,bilibili.tv," + BILIBILI,
+    "DOMAIN-SUFFIX,biligame.com," + BILIBILI,
+    "DOMAIN-SUFFIX,biligame.net," + BILIBILI,
+    "DOMAIN-SUFFIX,biliimg.com," + BILIBILI,
+    "DOMAIN-SUFFIX,biliintl.co," + BILIBILI,
+    "DOMAIN-SUFFIX,bilivideo.cn," + BILIBILI,
+    "DOMAIN-SUFFIX,bilivideo.com," + BILIBILI,
+    "DOMAIN-SUFFIX,hdslb.com," + BILIBILI,
+    "DOMAIN-SUFFIX,im9.com," + BILIBILI,
+
     // ChatGPT / OpenAI：主站、认证、Cloudflare 验证、WorkOS 等尽量固定同一出口。
     "DOMAIN,ws.chatgpt.com," + GPT,
     "DOMAIN-SUFFIX,chatgpt.com," + GPT,

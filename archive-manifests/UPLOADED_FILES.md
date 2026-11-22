@@ -5,7 +5,7 @@ Branch: `main`
 
 ## Clash Verge Rev / FlClash 智能分流配置
 
-Latest script version: `2026-11-19.1`  
+Latest script version: `2026-11-22.1`  
 Status: `testing` — JavaScript compilation and simulated inline-subscription configuration checks passed. Real airport subscription testing and long-running ChatGPT stream stability validation remain pending.
 
 | Path | Purpose |
@@ -14,9 +14,19 @@ Status: `testing` — JavaScript compilation and simulated inline-subscription c
 | `network/clash-verge-rev/clash-verge-rev-extension.js` | Shared routing script source |
 | `network/clash-verge-rev/README.md` | Desktop installation, GPT strategy design, known limitations and rollback |
 | `network/clash-verge-rev/CHANGELOG.md` | Script version and validation history |
+| `network/clash-verge-rev/tests/smoke-test.js` | Node.js smoke tests for GitHub/Bilibili routing, rule priority and regression checks |
 | `network/flclash-android/README.md` | Android FlClash script creation, subscription binding, apply, verification and rollback workflow |
 | `README.md` | Repository entry point and workflow links |
 | `catalog.json` | Machine-readable program catalog, including Android guide path |
+
+### Version 2026-11-22.1
+
+- Added a GitHub URLTest group (60-second interval, 5000ms timeout, 100ms tolerance, `max-failed-times: 1`, HTTP 200 probe).
+- Added GitHub domain routing for the website, REST API, Raw, Assets, Pages, Releases, and related resources.
+- Added a Bilibili selector defaulting to `DIRECT`; manual Hong Kong, Macau, and Taiwan nodes are available only when the subscription exposes recognizable nodes.
+- Added Bilibili domain rules before China GeoSite/GeoIP fallback so manual regional routing works in rule mode.
+- Added Macau region-name recognition and a Node.js smoke test.
+- Existing GPT, Google, International Auto, and other business group health-check logic remains unchanged.
 
 ### Version 2026-11-19.1
 

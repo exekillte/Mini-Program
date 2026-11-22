@@ -18,7 +18,7 @@
 | 程序 | 类型 | 版本 | 状态 |
 |---|---|---:|---|
 | 学习通作业图文导出（AI友好版） | Tampermonkey 用户脚本 | 1.3.1 | 使用中 |
-| Clash Verge Rev / FlClash 智能分流扩展 | 代理客户端共享分流脚本 | 2026-11-19.1 | 试运行，真实长连接稳定性待实测 |
+| Clash Verge Rev / FlClash 智能分流扩展 | 代理客户端共享分流脚本 | 2026-11-22.1 | 试运行，真实长连接稳定性待实测 |
 
 ### 学习通作业图文导出
 
@@ -28,12 +28,12 @@
 ### 网络配置与智能分流
 
 - [网络配置总目录](network/README.md)
-- [统一分流脚本源码（2026-11-19.1）](https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js)
+- [统一分流脚本源码（2026-11-22.1）](https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js)
 - [Clash Verge Rev 桌面端说明](network/clash-verge-rev/README.md)
 - [FlClash Android 操作流程](network/flclash-android/README.md)
 - [版本记录](network/clash-verge-rev/CHANGELOG.md)
 
-Android 版 FlClash 与桌面端共用同一份分流脚本。ChatGPT 组提供 URLTest 自动择优、Fallback 故障转移和独立手动子组；Google、TikTok、OneDrive、Steam、俄站和国际默认组也已同步更积极的 URLTest 健康检查。业务组使用各自探测地址；HTTP 探测不能保证 SSE/WebSocket 长连接不中断，也不能迁移已建立的旧连接。安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
+Android 版 FlClash 与桌面端共用同一份分流脚本。ChatGPT 保留 URLTest + Fallback + 手动子组；GitHub 新增专用 URLTest 自动分流；Google、TikTok、OneDrive、Steam、俄站和国际默认组使用各自的 URLTest 健康检查。Bilibili 新增默认 DIRECT 的手动港澳台选择器，可在规则模式下切换出口。HTTP 探测不能保证 SSE/WebSocket 长连接不中断，也不能迁移已建立的旧连接。安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
 
 ## 版本维护约定
 
