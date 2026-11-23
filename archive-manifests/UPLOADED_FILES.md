@@ -21,21 +21,22 @@ Status: `testing` — JavaScript compilation and simulated inline-subscription t
 
 ### Version 2026-11-24.1
 
-- Added the adult website selector with 96 curated domains spanning adult video, creator/live platforms, image boards, manga/anime and audio/ASMR.
-- Added country-specific adult URLTest pools; all country pools use Cloudflare HTTP 204 checks and lazy:false to keep unselected candidates tested.
-- Adult routing only auto-selects within the chosen country; cross-country changes remain manual to preserve Cloudflare region/session continuity and avoid the reported nested-Fallback issue.
-- Added the adult manual pool for all non-China nodes, including unclassified nodes.
-- Added the three missing GitHub S3 download hosts to the GitHub strategy group.
-- Expanded smoke tests for adult domains, country isolation, active health checks and GitHub S3 routing.
+- Added the adult website selector with 96 curated domains spanning adult video/studio catalogs, creator/live platforms, image boards, manga/anime, and audio/ASMR.
+- Added country-specific adult URLTest pools. Each pool only tests nodes classified into that country; all country pools use Cloudflare HTTP 204 checks and `lazy:false` to keep unselected candidates tested.
+- Adult routing automatically selects only within the chosen country; cross-country changes remain manual to preserve Cloudflare region/session continuity. Added a manual pool for all non-China nodes, including unclassified nodes.
+- Added the three missing GitHub S3 download hosts to the GitHub strategy group: release assets, repository files, and user assets.
+- Retained the GitHub URLTest group (60-second interval, 5000ms timeout, 100ms tolerance, `max-failed-times: 1`, HTTP 200 probe) and existing GitHub domain routing.
+- Retained the Bilibili selector defaulting to `DIRECT`, with manual Hong Kong, Macau, and Taiwan node choices; Bilibili rules remain before China GeoSite/GeoIP fallback.
+- Expanded smoke tests for adult domains, country isolation, active health checks, rule priority, and GitHub S3 routing.
 
-### Version 2026-11-24.1
+#### Source verification
 
-- Added a GitHub URLTest group (60-second interval, 5000ms timeout, 100ms tolerance, `max-failed-times: 1`, HTTP 200 probe).
-- Added GitHub domain routing for the website, REST API, Raw, Assets, Pages, Releases, and related resources.
-- Added a Bilibili selector defaulting to `DIRECT`; manual Hong Kong, Macau, and Taiwan nodes are available only when the subscription exposes recognizable nodes.
-- Added Bilibili domain rules before China GeoSite/GeoIP fallback so manual regional routing works in rule mode.
-- Added Macau region-name recognition and a Node.js smoke test.
-- Existing GPT, Google, International Auto, and other business group health-check logic remains unchanged.
+| File | UTF-8 bytes | Git Blob SHA |
+|---|---:|---|
+| `network/clash-verge-rev/clash-verge-rev-extension.js` | 26838 | `79d42021978065b78b3848b8d0d64b162c532238` |
+| `network/clash-verge-rev/tests/smoke-test.js` | 7640 | `a2e7957d032e58667e6c19980d1f3bd861c060a2` |
+
+Validation: JavaScript syntax compilation and the inline-subscription smoke test passed. Real airport subscription testing, R34 Cloudflare challenge behavior, and long-running media-stream stability remain pending.
 
 ### Version 2026-11-19.1
 
