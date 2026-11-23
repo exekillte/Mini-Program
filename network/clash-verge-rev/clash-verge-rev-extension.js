@@ -68,7 +68,6 @@ function main(config, profileName) {
     NL: [/🇳🇱/, /\bNL\b/i, /NETHERLANDS|荷兰/i],
     CA: [/🇨🇦/, /\bCA\b/i, /CANADA|加拿大/i],
     AU: [/🇦🇺/, /\bAU\b/i, /AUSTRALIA|澳大利亚|澳洲/i],
-    RU: [/🇷🇺/, /\bRU\b/i, /RUSSIA|俄罗斯|莫斯科/i],
     ES: [/🇪🇸/, /\bES\b/i, /SPAIN|西班牙/i],
     IT: [/🇮🇹/, /\bIT\b/i, /ITALY|意大利/i],
     CH: [/🇨🇭/, /\bCH\b/i, /SWITZERLAND|瑞士/i],
@@ -395,6 +394,9 @@ function main(config, profileName) {
     "xhamster.com", "xhamster.desi", "xhamsterlive.com", "xhamsterpremium.com", "xhcdn.com",
     "spankbang.com", "eporner.com", "beeg.com", "tnaflix.com", "youjizz.com",
     "erome.com", "motherless.com", "redgifs.com", "rule34video.com",
+    "adulttime.com", "brazzers.com", "realitykings.com", "bangbros.com",
+    "naughtyamerica.com", "mofos.com", "digitalplayground.com", "blacked.com",
+    "teamskeet.com", "evilangel.com", "vixen.com", "deeper.com", "bellesa.co", "porn.com",
     // 创作者订阅与成人直播平台。
     "onlyfans.com", "onlyfansusercontent.com", "fansly.com", "manyvids.com",
     "justfor.fans", "fancentro.com", "loyalfans.com", "fanvue.com",
@@ -403,7 +405,7 @@ function main(config, profileName) {
     "streamate.com", "flirt4free.com", "imlive.com", "jerkmate.com", "xlovecam.com",
     // 成人图片、插画与标签图库。
     "rule34.xxx", "rule34.paheal.net", "rule34vault.com", "gelbooru.com",
-    "danbooru.donmai.us", "e621.net", "xbooru.com", "tbib.org",
+    "danbooru.donmai.us", "donmai.us", "e621.net", "xbooru.com", "tbib.org",
     "hypnohub.net", "yande.re", "konachan.com", "realbooru.com",
     "sankakucomplex.com", "hentai-foundry.com",
     // 成人漫画、动画与视频。
