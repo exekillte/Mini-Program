@@ -5,21 +5,30 @@ Branch: `main`
 
 ## Clash Verge Rev / FlClash 智能分流配置
 
-Latest script version: `2026-11-22.1`  
-Status: `testing` — JavaScript compilation and simulated inline-subscription configuration checks passed. Real airport subscription testing and long-running ChatGPT stream stability validation remain pending.
+Latest script version: `2026-11-24.1`  
+Status: `testing` — JavaScript compilation and simulated inline-subscription tests passed. Real airport subscription testing, R34 Cloudflare challenge behavior, and long-running media-stream stability remain pending.
 
 | Path | Purpose |
 |---|---|
 | `network/README.md` | Network tools directory and cross-platform routing index |
 | `network/clash-verge-rev/clash-verge-rev-extension.js` | Shared routing script source |
-| `network/clash-verge-rev/README.md` | Desktop installation, GPT strategy design, known limitations and rollback |
+| `network/clash-verge-rev/README.md` | Desktop installation, GPT/GitHub/Bilibili/adult routing strategy, known limitations and rollback |
 | `network/clash-verge-rev/CHANGELOG.md` | Script version and validation history |
-| `network/clash-verge-rev/tests/smoke-test.js` | Node.js smoke tests for GitHub/Bilibili routing, rule priority and regression checks |
+| `network/clash-verge-rev/tests/smoke-test.js` | Node.js smoke tests for GitHub S3/Bilibili/adult routing, country isolation, rule priority and regression checks |
 | `network/flclash-android/README.md` | Android FlClash script creation, subscription binding, apply, verification and rollback workflow |
 | `README.md` | Repository entry point and workflow links |
 | `catalog.json` | Machine-readable program catalog, including Android guide path |
 
-### Version 2026-11-22.1
+### Version 2026-11-24.1
+
+- Added the adult website selector with 81 curated domains spanning adult video, creator/live platforms, image boards, manga/anime and audio/ASMR.
+- Added country-specific adult URLTest pools; all country pools use Cloudflare HTTP 204 checks and lazy:false to keep unselected candidates tested.
+- Adult routing only auto-selects within the chosen country; cross-country changes remain manual to preserve Cloudflare region/session continuity and avoid the reported nested-Fallback issue.
+- Added the adult manual pool for all non-China nodes, including unclassified nodes.
+- Added the three missing GitHub S3 download hosts to the GitHub strategy group.
+- Expanded smoke tests for adult domains, country isolation, active health checks and GitHub S3 routing.
+
+### Version 2026-11-24.1
 
 - Added a GitHub URLTest group (60-second interval, 5000ms timeout, 100ms tolerance, `max-failed-times: 1`, HTTP 200 probe).
 - Added GitHub domain routing for the website, REST API, Raw, Assets, Pages, Releases, and related resources.
