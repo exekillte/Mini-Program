@@ -5,7 +5,7 @@
 - 客户端：FlClash（Android）
 - 配置方式：JavaScript 脚本覆写
 - 脚本来源：`network/clash-verge-rev/clash-verge-rev-extension.js`
-- 当前脚本版本：`2026-11-22.1`
+- 当前脚本版本：`2026-11-24.1`
 - 脚本 Raw URL：<https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js>
 
 > 本流程记录的是本次成功操作路径。FlClash 后续版本可能调整菜单名称或位置；若界面不同，以当前版本实际显示为准。
@@ -57,7 +57,7 @@
 
 ## 五、检查策略组
 
-正常生成后应看到以下十个顶层业务组：
+正常生成后应看到以下十一个顶层业务组：
 
 | 顶层策略组 | 对应自动组 | 选择机制 |
 |---|---|---|
@@ -70,11 +70,12 @@
 | 🎮 Steam | ♻️ Steam自动 | URLTest |
 | 🇨🇳 国内直连 | DIRECT | 直连 |
 | 📺 哔哩哔哩 | DIRECT / 港澳台节点 | 默认直连；手动选港澳台节点后强制代理 |
+| 🔞 成人网站 | 各国家成人自动 / 成人手动 | 国家内 URLTest；跨国家手动 |
 | 🌍 国际默认 | ♻️ 国际自动 | URLTest |
 
 各顶层业务组应选择对应的自动组，而不是固定选择某一条单独节点。ChatGPT 组尤其要确认上层选择的是 `♻️ GPT自动`，否则会绕过自动故障转移。
 
-### GPT 策略组（2026-11-22.1）
+### GPT 策略组（2026-11-24.1）
 
 顶层「💬 ChatGPT」只保留三个入口：
 
@@ -86,7 +87,7 @@
 
 主页 HTTP 探测不是 WebSocket Upgrade 或模型流式传输测试。健康检查通过不代表账号登录、Cloudflare 验证、WebSocket、消息提交和长时间流式响应全部正常。代理组切换也不能迁移已经建立的旧连接。
 
-### 其他业务自动组（2026-11-22.1）
+### 其他业务自动组（2026-11-24.1）
 
 | 自动组 | 检测间隔 | 超时 | 容差 | 失败阈值 | 健康检查目标 |
 |---|---:|---:|---:|---:|---|
@@ -106,6 +107,15 @@ Bilibili 组不自动测速，默认选择 `DIRECT`。需要观看仅限港澳�
 
 **测速显示注意：** Clash Verge Rev 已有手动测速可能忽略 `expected-status`、以及界面延迟缓存可能滞后的公开问题（[Issue #8531](https://github.com/clash-verge-rev/clash-verge-rev/issues/8531)、[Issue #8646](https://github.com/clash-verge-rev/clash-verge-rev/issues/8646)）。单节点显示绿色不等于它通过了对应业务组的健康检查；需要同时验证真实网站访问。
 
+### 成人网站策略组
+
+- 顶层选择器为 🔞 成人网站，默认进入节点数量最多的国家自动组。
+- 进入后可看到机场实际提供的国家池，例如 ♻️ 成人日本自动、♻️ 成人香港自动、♻️ 成人台湾自动等；每个池只在本国节点内择优。
+- 所有国家池均使用 Cloudflare generate_204 HTTP 204 探测，60 秒间隔、5000ms 超时、150ms 容差、max-failed-times:1、lazy:false。未选中的国家池也会持续测速。
+- 跨国家切换需要手动选择。只有当前国家所有候选节点都失效时，才切换到其他国家；这样不会因为一个自动组直接跨国择优而频繁改变 R34 的出口地区。
+- 🖐 成人手动可选择所有非中国节点，包括地区名称无法识别的节点。
+- Cloudflare 仍可能依据 IP 声誉和 Bot 检测要求验证；健康检查通过不等于 R34 免验证，也不能保证正在播放的长连接无中断。
+
 ## 七、验收
 
 逐项打开网站并在 FlClash「连接」页检查实际命中的策略组：
@@ -116,7 +126,8 @@ Bilibili 组不自动测速，默认选择 `DIRECT`。需要观看仅限港澳�
 | Gemini | 🌐 Google → ♻️ Google自动 |
 | YouTube | 🌐 Google → ♻️ Google自动 |
 | Reddit | 🌍 国际默认 → ♻️ 国际自动 |
-| GitHub / Raw / Release | 🐙 GitHub → ♻️ GitHub自动 |
+| GitHub / Raw / Release / S3 下载 | 🐙 GitHub → ♻️ GitHub自动 |
+| R34 / Pornhub / RedGIFs / 成人 ASMR | 🔞 成人网站 → 当前国家自动组 |
 | Bilibili（日常） | 📺 哔哩哔哩 → DIRECT |
 | Bilibili（港澳台限定内容） | 📺 哔哩哔哩 → 手动选择香港 / 澳门 / 台湾节点 |
 | Taobao | 🇨🇳 国内直连 → DIRECT |
@@ -130,7 +141,7 @@ Bilibili 组不自动测速，默认选择 `DIRECT`。需要观看仅限港澳�
 - 确认创建时选择的是 JavaScript 类型。
 - 返回当前订阅的覆写页面，重新打开脚本选择列表。
 
-### 预览没有出现十个策略组
+### 预览没有出现十一个策略组
 - 检查当前订阅是否真的绑定了 `PC-Routing`。
 - 检查是否应用了正确的订阅，而不是另一份配置。
 - 检查脚本是否完整粘贴，尤其是首尾部分。
@@ -153,4 +164,4 @@ Android 与桌面端共用同一份分流脚本。更新时：
 3. 保存后重新预览、应用并执行本指南的验收项目。
 4. 不要把机场订阅地址、账号凭据或设备专属信息写入公开脚本或文档。
 
-相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。两端共用 `2026-11-22.1` 脚本。
+相关桌面端脚本说明：[`network/clash-verge-rev/README.md`](../clash-verge-rev/README.md)。两端共用 `2026-11-24.1` 脚本。
