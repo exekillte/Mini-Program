@@ -110,7 +110,7 @@ for (const host of [
   assert.ok(rules.includes("DOMAIN," + host + ",🐙 GitHub"), "missing GitHub S3 route: " + host);
 }
 for (const domain of [
-  "rule34.xxx", "phncdn.com", "phprcdn.com", "xhcdn.com",
+  "rule34.xxx", "phncdn.com", "phprcdn.com", "xhcdn.com", "adulttime.com", "donmai.us",
   "xvideos-cdn.com", "ypncdn.com", "mfcimg.com",
   "chaturbate.com", "asmr.one", "dlsite.com"
 ]) {
