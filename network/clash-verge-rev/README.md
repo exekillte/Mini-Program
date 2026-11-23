@@ -1,6 +1,6 @@
 # Clash Verge Rev 智能分流扩展
 
-- 版本标识：`2026-11-22.1`
+- 版本标识：`2026-11-24.1`
 - 状态：**试运行；脚本结构与模拟配置已验证，真实机场长连接稳定性待实测**
 - 类型：Clash Verge Rev / FlClash 共用的 Mihomo 订阅扩展脚本
 - 入口：`main(config, profileName)`
@@ -25,6 +25,7 @@
 7. 不为其他业务组增加 Fallback：Fallback 只按顺序选择第一个健康节点，不比较延迟，避免重新引入固定地区优先导致的锁点问题。
 8. 新增 **GitHub** 专用 URLTest 组，使用 GitHub 首页 HTTP 200 检查；网页、API、Raw、Release、资源文件和 Pages 域名统一分流。
 9. 新增 **Bilibili** 手动选择组，默认 `DIRECT`；只有手动选中香港、澳门或台湾节点时才代理，规则置于国内 GEOSITE/GEOIP 兜底之前。
+10. 新增 **成人网站**独立策略组，覆盖 81 个成人视频、直播、图片图库、漫画动画和成人音频域名；按国家建立 URLTest 子组，同国家自动择优，跨国家由用户手动决定。
 
 ## 策略组
 
@@ -41,6 +42,7 @@
 | 🎮 Steam | ♻️ Steam自动 | URLTest | Steam |
 | 🇨🇳 国内直连 | DIRECT | Select | 国内直连 |
 | 📺 哔哩哔哩 | DIRECT / 港澳台节点 | Select | 默认直连；手动选港澳台节点后强制代理 |
+| 🔞 成人网站 | 各国家成人自动 / 成人手动 | Select + URLTest | 国家内自动择优；跨国家手动切换 |
 | 🌍 国际默认 | ♻️ 国际自动 | URLTest | 未单独分类的国际网站 |
 
 ## ChatGPT 自动组参数
@@ -95,7 +97,7 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 | `max-failed-times` | 1 |
 | `lazy` | `true` |
 
-统一进入 GitHub 组的域名包括 `github.com`（含 `api.github.com`）、`githubusercontent.com`（含 Raw、Objects、Release 等子域）、`githubassets.com`、`github.io`、`github.dev`、`githubpreview.dev`、`githubstatus.com`、`github.community`、`github.blog`、`githubcopilot.com` 和 Git LFS 使用的 `github-cloud.s3.amazonaws.com`。
+统一进入 GitHub 组的域名包括 `github.com`（含 `api.github.com`）、`githubusercontent.com`（含 Raw、Objects、Release 等子域）、`githubassets.com`、`github.io`、`github.dev`、`githubpreview.dev`、`githubstatus.com`、`github.community`、`github.blog`、`githubcopilot.com`、`github-cloud.s3.amazonaws.com`，以及三个 GitHub 专用 S3 存储域名：`github-production-release-asset-2e65be.s3.amazonaws.com`、`github-production-repository-file-5c1aeb.s3.amazonaws.com`、`github-production-user-asset-6210df.s3.amazonaws.com`。
 
 这能避免网页走代理、Raw/API/Release 等相关域名却落入其他策略组。健康检查只验证 GitHub 首页 HTTP 200，不代表 Git smart HTTP、SSH、API 认证、LFS 大文件和所有下载链路都已实测通过。若 Luna 使用 ChatGPT 云端 GitHub 集成，本机 Clash 规则不会改变云端连接；本规则主要覆盖本机浏览器、Git、Codex 等经过本机 Clash 的流量。
 
@@ -109,6 +111,32 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 - 机场没有提供澳门节点，或节点名称无法识别时，不会凭空生成澳门选项。
 
 域名规则覆盖 Bilibili 主站、短链、API、图片、视频 CDN、国际站及相关游戏域名。规则放在 `GEOSITE,cn`、`GEOIP,CN` 之前，避免国内分类提前截走流量。没有将整个 `akamaized.net` 或 `smtcdns.net` 等共享 CDN 域名整体代理，避免误伤其他网站。
+
+## 成人网站专用分流与国家粘性
+
+🔞 成人网站是独立的顶层选择器，不把所有国家放进同一个 URLTest。它按机场实际提供且能明确识别的地区，动态生成国家专属 URLTest 子组：
+
+- 每个国家的自动组只包含该国节点，自动择优不会跨国。
+- 当前国家内按 Cloudflare 连通性探测结果择优，150ms 容差用于抑制小幅延迟波动引起的频繁换 IP。
+- 所有国家池均设为 lazy:false，即使当前没有选中，也会持续检查候选节点，避免切换国家时面对一批尚未测速的节点。
+- 健康检查：Cloudflare generate_204，预期 HTTP 204；60 秒间隔、5000ms 超时、max-failed-times: 1。
+- 默认国家按可识别节点数量最多者选择；数量相同时按日本 → 香港 → 台湾 → 新加坡 → 美国等顺序。若 R34 当前正常使用的国家不是默认项，首次使用前在成人网站组中选中当前国家的自动组。
+
+**跨国家切换刻意保留为手动。** 只有当前国家的候选节点全部失效时，才手动选择另一个国家。没有使用「Fallback 包住国家 URLTest」的嵌套结构：Mihomo 上游 Issue [#2588](https://github.com/MetaCubeX/mihomo/issues/2588) 仍报告嵌套组的组级健康状态可能与子节点状态不一致，导致 Fallback 提前跳过仍有可用子节点的国家组。这里优先避免错误跨国切换和不必要的 Cloudflare 再验证，而不是追求表面上的全自动。
+
+Cloudflare 官方说明，挑战可能由 IP 声誉、历史风险评分和 Bot 检测触发，不只取决于国家。因此，同国家换 IP 也不能保证完全不出现挑战。Cloudflare generate_204 只验证代理出口能否访问 Cloudflare 连通性端点，不等于验证 R34 对该 IP 的信誉，也不代表网站挑战已通过。参考：[Cloudflare Challenge troubleshooting](https://developers.cloudflare.com/cloudflare-challenges/troubleshooting/)。
+
+### 覆盖范围（81 个域名）
+
+- **成人视频与内容 CDN：** Pornhub、RedTube、Tube8、YouPorn、XVideos、XNXX、xHamster、SpankBang、Eporner、Beeg、TNAFlix、YouJizz、Erome、Motherless、RedGIFs、Rule34Video；并覆盖 phncdn.com、phprcdn.com、ypncdn.com、xhcdn.com、xvideos-cdn.com 等已识别媒体域名。
+- **创作者与直播：** OnlyFans、Fansly、ManyVids、JustFor.Fans、FanCentro、LoyalFans、Fanvue、Chaturbate、Stripchat、BongaCams、LiveJasmin、CAM4、MyFreeCams、CamSoda、Streamate、Flirt4Free、ImLive、Jerkmate、XLoveCam，以及 MyFreeCams 图片域名 mfcimg.com。
+- **成人图片与图库：** Rule34（rule34.xxx、Paheal、Rule34Vault）、Gelbooru、Danbooru、e621、Xbooru、TBIB、Hypnohub、Yande.re、Konachan、Realbooru、Sankaku、Hentai-Foundry。
+- **漫画与动画：** nhentai、Hitomi、E-Hentai、ExHentai、Hentai2Read、HentaiFox、HentaiHaven、Fakku、Hanime。
+- **成人音频与 ASMR：** ASMR.one、Japanese ASMR、EroASMR、Hentai ASMR、ASMRHoney、AudioDesires、EroVoice、OhCleo、ASMRFantasy；另含混合目录 DLsite（整站会进入该组，不只限 R18 页面）。
+
+规则只覆盖成人导向站点和已识别媒体域名，不把 Reddit、X、Pixiv 等混合用途平台整站纳入。第三方 CDN 若使用独立域名且未列入，仍可能走国际默认组；遇到具体资源加载失败时，应从 Clash「连接」页确认实际域名后再定向补充，避免把整个共享 CDN 域名代理。
+
+相关目录参考：[成人视频平台概览](https://en.wikipedia.org/wiki/List_of_online_video_platforms)、[直播平台目录](https://wheretoporn.com/cams)、[成人 ASMR 平台整理](https://nightanalytics.com/erotic-audio-stories/best-adult-asmr-sites/)。
 
 ## 一个重要边界：节点探测不等于流式连接监控
 
@@ -141,7 +169,7 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 2. 打开目标订阅的「扩展脚本」。
 3. 获取 [最新 Raw 源码](https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js)，完整替换旧脚本并保存。
 4. 更新订阅，检查扩展脚本日志和配置校验结果。
-5. 检查新增 `🐙 GitHub` 与 `📺 哔哩哔哩` 两个策略组；GitHub 顶层默认指向 `♻️ GitHub自动`，Bilibili 默认选中 `DIRECT`。
+5. 检查新增 `🐙 GitHub`、`📺 哔哩哔哩` 与 `🔞 成人网站` 三个策略组；GitHub 顶层默认指向 `♻️ GitHub自动`，Bilibili 默认选中 `DIRECT`，成人网站默认选择节点数量最多的国家池。首次使用 R34 前，如需保持当前 Cloudflare 国家会话，请手动选中当前正在使用的国家自动组。
 6. 打开代理页面，进入顶层「💬 ChatGPT」组。
 7. **确认顶层实际选择的是「♻️ GPT自动」**。若仍显示单独节点或旧选择，手动切换一次。
 8. 只有需要备用策略时，才选择「🛟 GPT故障转移」；手动测试单节点时选择「🖐 GPT手动」。
@@ -154,7 +182,7 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 - 如果输出中途断开，记录当时顶层 ChatGPT 选择的子组、实际节点、时间及是否发生切换。
 - 如果要对比 URLTest 与 Fallback，请一次只选择一个策略，避免把手动节点选择误当成自动组行为。
 
-## 其他业务自动组（2026-11-22.1）
+## 其他业务自动组（2026-11-24.1）
 
 | 自动组 | 健康检查地址 | 预期状态 | 间隔 | 超时 | 容差 | `max-failed-times` | `lazy` |
 |---|---|---:|---:|---:|---:|---:|---|
