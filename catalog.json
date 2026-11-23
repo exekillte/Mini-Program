@@ -18,13 +18,13 @@
       "id": "clash-verge-rev-stable-routing",
       "name": "Clash Verge Rev / FlClash 智能分流脚本",
       "type": "mihomo-routing-script",
-      "version": "2026-11-22.1",
+      "version": "2026-11-24.1",
       "status": "testing",
       "sourcePath": "network/clash-verge-rev/clash-verge-rev-extension.js",
       "sourceUrl": "https://raw.githubusercontent.com/exekillte/Mini-Program/main/network/clash-verge-rev/clash-verge-rev-extension.js",
       "documentationPath": "network/clash-verge-rev/README.md",
       "androidGuidePath": "network/flclash-android/README.md",
-      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 保留 URLTest + Fallback + 手动子组；GitHub 新增专用 URLTest 自动分流；Google、TikTok、俄站、OneDrive、Steam、国际默认组使用独立业务探测 URL；Bilibili 选择器默认 DIRECT，手动选择港澳台节点后在规则模式下代理。HTTP 探测不等于 Git 操作全链路或 SSE/WebSocket 长连接测试；真实稳定性待实测。"
+      "notes": "桌面端 Clash Verge Rev 与 Android FlClash 共用同一份脚本。GPT 保留 URLTest + Fallback + 手动子组；GitHub 专用 URLTest 覆盖网页/API/Raw/Release，并补齐三个 S3 下载域名；Bilibili 默认 DIRECT、手动选择港澳台；成人网站覆盖 81 个域名，国家内 URLTest 自动择优、跨国家手动切换。成人健康检查使用 Cloudflare 204，lazy:false 持续检测各国家池；不保证 R34 的 Cloudflare IP 信誉或媒体长连接永不中断。"
     },
     {
       "id": "pdf-toolbox",
