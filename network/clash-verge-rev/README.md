@@ -25,7 +25,7 @@
 7. 不为其他业务组增加 Fallback：Fallback 只按顺序选择第一个健康节点，不比较延迟，避免重新引入固定地区优先导致的锁点问题。
 8. 新增 **GitHub** 专用 URLTest 组，使用 GitHub 首页 HTTP 200 检查；网页、API、Raw、Release、资源文件和 Pages 域名统一分流。
 9. 新增 **Bilibili** 手动选择组，默认 `DIRECT`；只有手动选中香港、澳门或台湾节点时才代理，规则置于国内 GEOSITE/GEOIP 兜底之前。
-10. 新增 **成人网站**独立策略组，覆盖 81 个成人视频、直播、图片图库、漫画动画和成人音频域名；按国家建立 URLTest 子组，同国家自动择优，跨国家由用户手动决定。
+10. 新增 **成人网站**独立策略组，覆盖 96 个成人视频、直播、图片图库、漫画动画和成人音频域名；按国家建立 URLTest 子组，同国家自动择优，跨国家由用户手动决定。
 
 ## 策略组
 
@@ -126,11 +126,11 @@ Fallback 不比较延迟，只按顺序选择第一个健康节点。它是备�
 
 Cloudflare 官方说明，挑战可能由 IP 声誉、历史风险评分和 Bot 检测触发，不只取决于国家。因此，同国家换 IP 也不能保证完全不出现挑战。Cloudflare generate_204 只验证代理出口能否访问 Cloudflare 连通性端点，不等于验证 R34 对该 IP 的信誉，也不代表网站挑战已通过。参考：[Cloudflare Challenge troubleshooting](https://developers.cloudflare.com/cloudflare-challenges/troubleshooting/)。
 
-### 覆盖范围（81 个域名）
+### 覆盖范围（96 个域名）
 
-- **成人视频与内容 CDN：** Pornhub、RedTube、Tube8、YouPorn、XVideos、XNXX、xHamster、SpankBang、Eporner、Beeg、TNAFlix、YouJizz、Erome、Motherless、RedGIFs、Rule34Video；并覆盖 phncdn.com、phprcdn.com、ypncdn.com、xhcdn.com、xvideos-cdn.com 等已识别媒体域名。
+- **成人视频与内容 CDN：** Pornhub、RedTube、Tube8、YouPorn、XVideos、XNXX、xHamster、SpankBang、Eporner、Beeg、TNAFlix、YouJizz、Erome、Motherless、RedGIFs、Rule34Video，以及 AdultTime、Brazzers、Reality Kings、BangBros、Naughty America、Mofos、Digital Playground、Blacked、TeamSkeet、Evil Angel、Vixen、Deeper、Bellesa、Porn.com；并覆盖 phncdn.com、phprcdn.com、ypncdn.com、xhcdn.com、xvideos-cdn.com 等已识别媒体域名。
 - **创作者与直播：** OnlyFans、Fansly、ManyVids、JustFor.Fans、FanCentro、LoyalFans、Fanvue、Chaturbate、Stripchat、BongaCams、LiveJasmin、CAM4、MyFreeCams、CamSoda、Streamate、Flirt4Free、ImLive、Jerkmate、XLoveCam，以及 MyFreeCams 图片域名 mfcimg.com。
-- **成人图片与图库：** Rule34（rule34.xxx、Paheal、Rule34Vault）、Gelbooru、Danbooru、e621、Xbooru、TBIB、Hypnohub、Yande.re、Konachan、Realbooru、Sankaku、Hentai-Foundry。
+- **成人图片与图库：** Rule34（rule34.xxx、Paheal、Rule34Vault）、Gelbooru、Danbooru（含 donmai.us 媒体域名）、e621、Xbooru、TBIB、Hypnohub、Yande.re、Konachan、Realbooru、Sankaku、Hentai-Foundry。
 - **漫画与动画：** nhentai、Hitomi、E-Hentai、ExHentai、Hentai2Read、HentaiFox、HentaiHaven、Fakku、Hanime。
 - **成人音频与 ASMR：** ASMR.one、Japanese ASMR、EroASMR、Hentai ASMR、ASMRHoney、AudioDesires、EroVoice、OhCleo、ASMRFantasy；另含混合目录 DLsite（整站会进入该组，不只限 R18 页面）。
 
