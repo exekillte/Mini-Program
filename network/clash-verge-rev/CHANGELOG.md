@@ -1,3 +1,37 @@
+## 2026-11-24.1 — 成人网站国家粘性分流与 GitHub 下载链路补全
+
+### Changed
+- 新增 🔞 成人网站独立顶层选择器，收录 81 个成人视频、创作者/直播、图片图库、漫画动画、成人音频/ASMR 域名及已确认的媒体 CDN。
+- 按机场实际节点生成国家专属 URLTest 子组；每个子组只测试同一国家节点，不跨国择优。
+- 成人国家池统一使用 Cloudflare generate_204，预期 HTTP 204；60 秒间隔、5000ms 超时、150ms 容差、max-failed-times:1、lazy:false。
+- 所有国家池持续健康检查，即使当前未选中也刷新节点状态；顶层默认进入识别节点数量最多的国家池，数量相同时按日本、香港、台湾、新加坡、美国等顺序。
+- 新增 🖐 成人手动子组，保留所有非中国节点，包括地区无法识别的节点。
+- 跨国家切换保留手动控制，不使用嵌套 Fallback。Mihomo [#2588](https://github.com/MetaCubeX/mihomo/issues/2588) 仍报告嵌套组健康状态可能误判，导致 Fallback 提前跳过有可用子节点的国家组。
+- 补齐 GitHub 三个 S3 下载域名：Release asset、repository file、user asset；统一进入 🐙 GitHub。
+
+### Rationale
+- R34 使用 Cloudflare 挑战机制，自动跨国择优会改变出口地区并增加重新验证概率。国家内 URLTest 可以在当前国家中换用其他健康节点；跨国家只在当前国家节点全部失效后由用户决定。
+- Cloudflare 官方说明挑战可由 IP 声誉、历史风险评分和 Bot 检测触发；国家一致不能保证同一国家不同 IP 都免挑战。
+- Cloudflare generate_204 只测试通用 Cloudflare 网络连通性，不代表目标成人站点对该 IP 的信誉判断或挑战结果。
+- 81 个域名按成人视频、创作者/直播、图片图库、漫画动画和音频 ASMR 分类；不把 Reddit、X、Pixiv 等混合平台整站纳入。
+
+### Validation
+- JavaScript 在 V8 中编译通过。
+- 模拟内联订阅验证：成人顶层选择器、按国家隔离的 URLTest、最大节点池默认选择、全部国家池 lazy:false、手动池保留地区未知节点。
+- 验证成人域名规则位于 GEOSITE/GEOIP 国内兜底和国际默认规则之前。
+- 验证三个 GitHub S3 域名使用正确的 JavaScript 规则格式，并进入 GitHub 专用策略组。
+- 验证原始机场 proxies 节点数组未被修改。
+- 尚未在用户真实机场订阅上验证全部 81 个站点，也未实测 R34 的 Cloudflare 信誉/挑战结果和长时间媒体播放；应用后仍需实机验收。
+
+### References
+- [Mihomo proxy groups: URLTest](https://wiki.metacubex.one/config/proxy-groups/url-test/)
+- [Mihomo issue #2588: nested group health-check behavior](https://github.com/MetaCubeX/mihomo/issues/2588)
+- [Cloudflare Challenge troubleshooting](https://developers.cloudflare.com/cloudflare-challenges/troubleshooting/)
+- [GitHub S3 asset hosts](https://github.com/ineo6/hosts/blob/master/hosts)
+- [Adult video platform overview](https://en.wikipedia.org/wiki/List_of_online_video_platforms)
+- [Adult live cam directory](https://wheretoporn.com/cams)
+- [Adult ASMR platform review](https://nightanalytics.com/erotic-audio-stories/best-adult-asmr-sites/)
+
 ## 2026-11-22.1 — GitHub 专用自动分流与 Bilibili 港澳台手动切换
 
 ### Changed
