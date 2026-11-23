@@ -33,7 +33,7 @@
 - [FlClash Android 操作流程](network/flclash-android/README.md)
 - [版本记录](network/clash-verge-rev/CHANGELOG.md)
 
-Android 版 FlClash 与桌面端共用同一份分流脚本。ChatGPT 保留 URLTest + Fallback + 手动子组；GitHub 新增专用 URLTest 自动分流并补齐三个 GitHub S3 下载域名；Bilibili 保留默认 DIRECT 的手动港澳台选择器；成人网站新增 81 个域名的独立策略组，国家内自动择优、跨国家手动切换。HTTP 探测不能保证 SSE/WebSocket 长连接不中断，也不能迁移已建立的旧连接。安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
+Android 版 FlClash 与桌面端共用同一份分流脚本。ChatGPT 保留 URLTest + Fallback + 手动子组；GitHub 新增专用 URLTest 自动分流并补齐三个 GitHub S3 下载域名；Bilibili 保留默认 DIRECT 的手动港澳台选择器；成人网站新增 96 个域名的独立策略组，国家内自动择优、跨国家手动切换。HTTP 探测不能保证 SSE/WebSocket 长连接不中断，也不能迁移已建立的旧连接。安卓端需要在当前订阅的「覆写」设置中绑定 JavaScript 脚本，具体步骤见 Android 操作指南。
 
 ## 版本维护约定
 
