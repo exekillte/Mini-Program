@@ -16,7 +16,8 @@ const proxies = [
   proxy("🇭🇰 Hong Kong Demo"),
   proxy("🇲🇴 Macau Demo"),
   proxy("🇹🇼 Taiwan Demo"),
-  proxy("🇯🇵 Japan Demo"),
+  proxy("🇯🇵 Japan Demo A"),
+  proxy("🇯🇵 Japan Demo B"),
   proxy("🇸🇬 Singapore Demo"),
   proxy("🇩🇪 Germany Demo"),
   proxy("congyu.org 🐱"),
@@ -30,6 +31,9 @@ const group = name => groups.find(item => item.name === name);
 const github = group("🐙 GitHub");
 const githubAuto = group("♻️ GitHub自动");
 const bilibili = group("📺 哔哩哔哩");
+const adult = group("🔞 成人网站");
+const adultJapan = group("♻️ 成人日本自动");
+const adultManual = group("🖐 成人手动");
 
 assert.ok(github, "GitHub parent selector must exist");
 assert.equal(github.type, "select");
@@ -58,11 +62,60 @@ assert.ok(bilibili.proxies.includes("DIRECT"));
 assert.ok(bilibili.proxies.includes("🇭🇰 Hong Kong Demo"));
 assert.ok(bilibili.proxies.includes("🇲🇴 Macau Demo"));
 assert.ok(bilibili.proxies.includes("🇹🇼 Taiwan Demo"));
-assert.ok(!bilibili.proxies.includes("🇯🇵 Japan Demo"));
+assert.ok(!bilibili.proxies.includes("🇯🇵 Japan Demo A"));
 assert.ok(!bilibili.proxies.includes("🇺🇸 USA Alice"));
+
+assert.ok(adult, "Adult website selector must exist");
+assert.equal(adult.type, "select");
+assert.equal(adult["default-selected"], "♻️ 成人日本自动", "default country should have the largest recognized node pool");
+assert.ok(adult.proxies.includes("♻️ 成人日本自动"));
+assert.ok(adult.proxies.includes("♻️ 成人香港自动"));
+assert.ok(adult.proxies.includes("♻️ 成人台湾自动"));
+assert.ok(adult.proxies.includes("♻️ 成人新加坡自动"));
+assert.ok(adult.proxies.includes("♻️ 成人美国自动"));
+assert.ok(adult.proxies.includes("🖐 成人手动"));
+
+assert.ok(adultJapan, "Japan-specific adult URLTest group must exist");
+assert.equal(adultJapan.type, "url-test");
+assert.equal(adultJapan.url, "https://cp.cloudflare.com/generate_204");
+assert.equal(String(adultJapan["expected-status"]), "204");
+assert.equal(adultJapan.interval, 60);
+assert.equal(adultJapan.timeout, 5000);
+assert.equal(adultJapan.tolerance, 150);
+assert.equal(adultJapan["max-failed-times"], 1);
+assert.equal(adultJapan.lazy, false, "all country pools must keep probing while unselected");
+assert.deepEqual(Array.from(adultJapan.proxies), ["🇯🇵 Japan Demo A", "🇯🇵 Japan Demo B"]);
+assert.ok(adultManual, "Adult manual pool must exist");
+assert.ok(adultManual.proxies.includes("congyu.org 🐱"), "unclassified overseas nodes remain manually selectable");
+assert.ok(!groups.some(item => item.name.startsWith("♻️ 成人") && item.type === "fallback"),
+  "adult routing must avoid nested fallback groups; cross-country changes stay manual");
+
+const adultCountryGroups = groups.filter(item => item.name.startsWith("♻️ 成人") && item.type === "url-test");
+assert.ok(adultCountryGroups.length >= 5);
+for (const item of adultCountryGroups) {
+  assert.equal(item.url, "https://cp.cloudflare.com/generate_204");
+  assert.equal(item.interval, 60);
+  assert.equal(item.timeout, 5000);
+  assert.equal(item.lazy, false);
+  assert.equal(item.tolerance, 150);
+}
 
 const rules = output.rules;
 const indexOfRule = prefix => rules.findIndex(rule => rule.startsWith(prefix));
+for (const host of [
+  "github-production-release-asset-2e65be.s3.amazonaws.com",
+  "github-production-repository-file-5c1aeb.s3.amazonaws.com",
+  "github-production-user-asset-6210df.s3.amazonaws.com"
+]) {
+  assert.ok(rules.includes("DOMAIN," + host + ",🐙 GitHub"), "missing GitHub S3 route: " + host);
+}
+for (const domain of [
+  "rule34.xxx", "phncdn.com", "phprcdn.com", "xhcdn.com",
+  "xvideos-cdn.com", "ypncdn.com", "mfcimg.com",
+  "chaturbate.com", "asmr.one", "dlsite.com"
+]) {
+  assert.ok(rules.includes("DOMAIN-SUFFIX," + domain + ",🔞 成人网站"), "missing adult route: " + domain);
+}
 assert.ok(indexOfRule("DOMAIN-SUFFIX,github.com,") >= 0);
 assert.ok(indexOfRule("DOMAIN-SUFFIX,githubusercontent.com,") >= 0);
 assert.ok(indexOfRule("DOMAIN-SUFFIX,githubassets.com,") >= 0);
@@ -71,6 +124,9 @@ assert.ok(indexOfRule("DOMAIN-SUFFIX,bilivideo.com,") >= 0);
 assert.ok(indexOfRule("DOMAIN-SUFFIX,hdslb.com,") >= 0);
 assert.ok(indexOfRule("DOMAIN-SUFFIX,bilibili.com,") < indexOfRule("GEOSITE,cn,"));
 assert.ok(indexOfRule("DOMAIN-SUFFIX,bilibili.com,") < indexOfRule("GEOIP,CN,"));
+assert.ok(indexOfRule("DOMAIN-SUFFIX,rule34.xxx,") < indexOfRule("GEOSITE,cn,"));
+assert.ok(indexOfRule("DOMAIN-SUFFIX,rule34.xxx,") < indexOfRule("GEOIP,CN,"));
+assert.ok(indexOfRule("DOMAIN-SUFFIX,rule34.xxx,") < indexOfRule("GEOSITE,geolocation-!cn,"));
 assert.ok(rules[rules.length - 1].startsWith("MATCH,"));
 
 assert.ok(group("🌐 Google"), "existing Google group must remain");
@@ -79,6 +135,7 @@ assert.ok(group("♻️ 国际自动"), "existing international auto group must 
 assert.equal(group("♻️ 国际自动").url, "https://www.gstatic.com/generate_204");
 assert.equal(group("♻️ 国际自动").interval, 60);
 assert.equal(group("♻️ 国际自动").lazy, true);
+assert.equal(groups.filter(item => ["💬 ChatGPT","🐙 GitHub","🌐 Google","📱 TikTok","🪆 俄站","☁️ OneDrive","🎮 Steam","🇨🇳 国内直连","📺 哔哩哔哩","🔞 成人网站","🌍 国际默认"].includes(item.name)).length, 11);
 assert.equal(JSON.stringify(output.proxies), originalProxies, "original proxy nodes must remain unchanged");
 
-console.log("PASS: GitHub auto routing, Bilibili manual HK/MO/TW routing, rule priority, and existing groups.");
+console.log("PASS: GitHub S3 routes, Bilibili manual HK/MO/TW routing, adult country-sticky pools, adult domains, rule priority, and existing groups.");
