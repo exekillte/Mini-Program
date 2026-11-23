@@ -21,7 +21,7 @@ Status: `testing` — JavaScript compilation and simulated inline-subscription t
 
 ### Version 2026-11-24.1
 
-- Added the adult website selector with 81 curated domains spanning adult video, creator/live platforms, image boards, manga/anime and audio/ASMR.
+- Added the adult website selector with 96 curated domains spanning adult video, creator/live platforms, image boards, manga/anime and audio/ASMR.
 - Added country-specific adult URLTest pools; all country pools use Cloudflare HTTP 204 checks and lazy:false to keep unselected candidates tested.
 - Adult routing only auto-selects within the chosen country; cross-country changes remain manual to preserve Cloudflare region/session continuity and avoid the reported nested-Fallback issue.
 - Added the adult manual pool for all non-China nodes, including unclassified nodes.
