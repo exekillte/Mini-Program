@@ -17,7 +17,7 @@
 - **安卓端操作流程：** [FlClash Android 网络分流配置流程](flclash-android/README.md)
 - **GitHub：** 专用 URLTest 自动择优，网页/API/Raw/Release 相关域名统一分流。
 - **Bilibili：** 独立手动选择器，默认 DIRECT；手动选港澳台节点后在规则模式下强制代理。
-- **成人网站：** 81 个成人内容域名统一分流；国家内 URLTest 自动择优，国家之间手动切换以维持 Cloudflare 地区会话。
+- **成人网站：** 96 个成人内容域名统一分流；国家内 URLTest 自动择优，国家之间手动切换以维持 Cloudflare 地区会话。
 
 ### ChatGPT 代理组
 
