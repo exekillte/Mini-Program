@@ -1,5 +1,5 @@
 // Clash Verge Rev 扩展脚本
-// 版本：2026-11-22.1 GitHub 自动分流与 Bilibili 港澳台手动分流
+// 版本：2026-11-24.1 成人网站国家粘性分流与 GitHub 下载补全
 // 目标：真实节点筛选、业务分层、URLTest 自动择优、国内直连、未知国际默认代理。
 // 注意：URLTest 仅按指定健康检查 URL 的响应延迟择优，不代表吞吐量或丢包率。
 // 仅重建 proxy-groups 和 rules，不修改机场原始 proxies、DNS、TUN、订阅地址。
@@ -68,6 +68,21 @@ function main(config, profileName) {
     NL: [/🇳🇱/, /\bNL\b/i, /NETHERLANDS|荷兰/i],
     CA: [/🇨🇦/, /\bCA\b/i, /CANADA|加拿大/i],
     AU: [/🇦🇺/, /\bAU\b/i, /AUSTRALIA|澳大利亚|澳洲/i],
+    RU: [/🇷🇺/, /\bRU\b/i, /RUSSIA|俄罗斯|莫斯科/i],
+    ES: [/🇪🇸/, /\bES\b/i, /SPAIN|西班牙/i],
+    IT: [/🇮🇹/, /\bIT\b/i, /ITALY|意大利/i],
+    CH: [/🇨🇭/, /\bCH\b/i, /SWITZERLAND|瑞士/i],
+    AT: [/🇦🇹/, /\bAT\b/i, /AUSTRIA|奥地利/i],
+    BE: [/🇧🇪/, /\bBE\b/i, /BELGIUM|比利时/i],
+    PL: [/🇵🇱/, /\bPL\b/i, /POLAND|波兰/i],
+    SE: [/🇸🇪/, /\bSE\b/i, /SWEDEN|瑞典/i],
+    NO: [/🇳🇴/, /\bNO\b/i, /NORWAY|挪威/i],
+    FI: [/🇫🇮/, /\bFI\b/i, /FINLAND|芬兰/i],
+    IE: [/🇮🇪/, /\bIE\b/i, /IRELAND|爱尔兰/i],
+    TR: [/🇹🇷/, /\bTR\b/i, /TURKEY|TURKIYE|土耳其/i],
+    BR: [/🇧🇷/, /\bBR\b/i, /BRAZIL|巴西/i],
+    MX: [/🇲🇽/, /\bMX\b/i, /MEXICO|墨西哥/i],
+    AR: [/🇦🇷/, /\bAR\b/i, /ARGENTINA|阿根廷/i],
     CN: [/🇨🇳/, /\bCN\b/i, /CHINA|中国大陆|大陆节点|中国节点/i]
   };
 
@@ -126,6 +141,37 @@ function main(config, profileName) {
 
   // Bilibili：只允许手动选择港澳台节点；默认 DIRECT，不建立自动测速或自动切换。
   const bilibiliManual = pickOrdered(["HK", "MO", "TW"]);
+
+  // 成人网站：国家内 URLTest 自动择优；跨国家不自动回退，避免 Cloudflare 会话因地区变化反复挑战。
+  // 所有国家池均 lazy:false，未选中的国家也持续健康检查，减少切换国家时遇到陈旧/未测速节点。
+  // 默认国家按可识别节点数量最多者选择；数量相同时按 JP -> HK -> TW -> SG -> US ... 的顺序。
+  const adultRegionMeta = [
+    ["JP", "日本"], ["HK", "香港"], ["TW", "台湾"], ["SG", "新加坡"],
+    ["KR", "韩国"], ["US", "美国"], ["GB", "英国"], ["DE", "德国"],
+    ["NL", "荷兰"], ["CA", "加拿大"], ["AU", "澳大利亚"], ["MO", "澳门"],
+    ["MY", "马来西亚"], ["PH", "菲律宾"], ["TH", "泰国"], ["IN", "印度"],
+    ["ID", "印度尼西亚"], ["VN", "越南"], ["RU", "俄罗斯"], ["FR", "法国"],
+    ["ES", "西班牙"], ["IT", "意大利"], ["CH", "瑞士"], ["AT", "奥地利"],
+    ["BE", "比利时"], ["PL", "波兰"], ["SE", "瑞典"], ["NO", "挪威"],
+    ["FI", "芬兰"], ["IE", "爱尔兰"], ["TR", "土耳其"], ["BR", "巴西"],
+    ["MX", "墨西哥"], ["AR", "阿根廷"]
+  ];
+  const adultRegionPools = adultRegionMeta
+    .map(([region, label], priority) => ({
+      region,
+      label,
+      priority,
+      groupName: "♻️ 成人" + label + "自动",
+      nodes: pickAutoOrdered([region])
+    }))
+    .filter(item => item.nodes.length > 0);
+  const adultManual = nodes.filter(name => !hasRegion(name, "CN"));
+  const adultDefaultRegion = [...adultRegionPools].sort(
+    (a, b) => b.nodes.length - a.nodes.length || a.priority - b.priority
+  )[0];
+  const adultDefaultGroup = adultDefaultRegion
+    ? adultDefaultRegion.groupName
+    : (adultManual.length ? "🖐 成人手动" : "REJECT");
 
   const groups = [];
 
@@ -281,6 +327,45 @@ function main(config, profileName) {
     "default-selected": "DIRECT"
   });
 
+  // 成人网站：国家内 URLTest，持续检测所有国家候选；跨国家切换由用户手动决定。
+  // 使用 Cloudflare 官方 204 连通性端点；它只验证 Cloudflare 网络可达，不代表 R34 对该 IP 一定免挑战。
+  for (const region of adultRegionPools) {
+    groups.push({
+      name: region.groupName,
+      type: "url-test",
+      proxies: region.nodes,
+      url: "https://cp.cloudflare.com/generate_204",
+      interval: 60,
+      timeout: 5000,
+      lazy: false,
+      "max-failed-times": 1,
+      "expected-status": "204",
+      tolerance: 150,
+      hidden: true
+    });
+  }
+
+  if (adultManual.length > 0) {
+    groups.push({
+      name: "🖐 成人手动",
+      type: "select",
+      proxies: adultManual,
+      "default-selected": adultManual[0],
+      hidden: true
+    });
+  }
+
+  const adultOptions = unique([
+    ...adultRegionPools.map(region => region.groupName),
+    ...(adultManual.length ? ["🖐 成人手动"] : [])
+  ]);
+  groups.push({
+    name: "🔞 成人网站",
+    type: "select",
+    proxies: adultOptions.length ? adultOptions : ["REJECT"],
+    "default-selected": adultDefaultGroup
+  });
+
   // 国际默认：兜底组使用高频健康检查，避免未知国际站点长期留在失效出口。
   addService(
     "🌍 国际默认", "♻️ 国际自动", "url-test", intlAuto, intlManual,
@@ -300,6 +385,36 @@ function main(config, profileName) {
   const STEAM = "🎮 Steam";
   const CN = "🇨🇳 国内直连";
   const INTL = "🌍 国际默认";
+  const ADULT = "🔞 成人网站";
+
+  const adultDomains = [
+    // 成人视频站与其已确认的媒体 CDN。
+    "pornhub.com", "pornhubpremium.com", "phncdn.com", "phprcdn.com",
+    "redtube.com", "tube8.com", "youporn.com", "ypncdn.com",
+    "xvideos.com", "xvideos-cdn.com", "xnxx.com",
+    "xhamster.com", "xhamster.desi", "xhamsterlive.com", "xhamsterpremium.com", "xhcdn.com",
+    "spankbang.com", "eporner.com", "beeg.com", "tnaflix.com", "youjizz.com",
+    "erome.com", "motherless.com", "redgifs.com", "rule34video.com",
+    // 创作者订阅与成人直播平台。
+    "onlyfans.com", "onlyfansusercontent.com", "fansly.com", "manyvids.com",
+    "justfor.fans", "fancentro.com", "loyalfans.com", "fanvue.com",
+    "chaturbate.com", "stripchat.com", "bongacams.com", "livejasmin.com",
+    "cam4.com", "myfreecams.com", "mfcimg.com", "camsoda.com",
+    "streamate.com", "flirt4free.com", "imlive.com", "jerkmate.com", "xlovecam.com",
+    // 成人图片、插画与标签图库。
+    "rule34.xxx", "rule34.paheal.net", "rule34vault.com", "gelbooru.com",
+    "danbooru.donmai.us", "e621.net", "xbooru.com", "tbib.org",
+    "hypnohub.net", "yande.re", "konachan.com", "realbooru.com",
+    "sankakucomplex.com", "hentai-foundry.com",
+    // 成人漫画、动画与视频。
+    "nhentai.net", "hitomi.la", "e-hentai.org", "exhentai.org",
+    "hentai2read.com", "hentaifox.com", "hentaihaven.xxx", "fakku.net",
+    "hanime.tv", "hanime1.me",
+    // 成人音频与 ASMR；DLsite 为混合目录，整站会统一走该组。
+    "asmr.one", "japaneseasmr.com", "eroasmr.com", "hentaiasmr.moe",
+    "asmrhoney.com", "audiodesires.com", "erovoice.us", "ohcleo.com",
+    "asmrfantasy.com", "dlsite.com", "dlsite.jp"
+  ];
 
   config.rules = [
     // GitHub：网页、REST API、Raw、Release、资源文件及 Pages 统一走专用策略组。
@@ -314,6 +429,9 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,github.blog," + GITHUB,
     "DOMAIN-SUFFIX,githubcopilot.com," + GITHUB,
     "DOMAIN-SUFFIX,github-cloud.s3.amazonaws.com," + GITHUB,
+    "DOMAIN,github-production-release-asset-2e65be.s3.amazonaws.com," + GITHUB,
+    "DOMAIN,github-production-repository-file-5c1aeb.s3.amazonaws.com," + GITHUB,
+    "DOMAIN,github-production-user-asset-6210df.s3.amazonaws.com," + GITHUB,
 
     // Bilibili：必须排在 GEOSITE,CN / GEOIP,CN 之前，才能在规则模式下手动切换港澳台出口。
     "DOMAIN,apiintl.biliapi.net," + BILIBILI,
@@ -336,6 +454,9 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,bilivideo.com," + BILIBILI,
     "DOMAIN-SUFFIX,hdslb.com," + BILIBILI,
     "DOMAIN-SUFFIX,im9.com," + BILIBILI,
+
+    // 成人网站：只收录成人导向站点及确认的内容 CDN，不把 Reddit / X / Pixiv 等混合平台整站纳入。
+    ...adultDomains.map(domain => "DOMAIN-SUFFIX," + domain + "," + ADULT),
 
     // ChatGPT / OpenAI：主站、认证、Cloudflare 验证、WorkOS 等尽量固定同一出口。
     "DOMAIN,ws.chatgpt.com," + GPT,
